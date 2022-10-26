@@ -9,6 +9,7 @@ Multiples components have been developped:
 - [x] `utf8.hpp`: handle utf8 convertion using windows api (faster than STL)
 - [x] `parser.hpp`: parse the command-line arguments
 - [x] `progress-bar.hpp`: improved progress-bar based on indicators::ProgressBar
+- [x] `files.hpp`: set of functions to handle files
 
 ## Installation
 
@@ -21,8 +22,10 @@ To import the library in cmake:
 ```cmake
     find_package(fmt CONFIG REQUIRED)
     find_package(indicators CONFIG REQUIRED)
+    find_package(OpenSSL REQUIRED)
     find_package(winpp CONFIG REQUIRED)
     target_link_libraries(main PRIVATE 
+      OpenSSL::Crypto
       indicators::indicators
       fmt::fmt-header-only
       winpp::winpp)
@@ -140,6 +143,7 @@ file: input.cpp
 ```
 
 ### progress-bar
+
 The header-only `winpp::ProgressBar` class is an enhanced *progress-bar* based on `indicators::ProgressBar`.  
 It only updates every **100ms** instead of trying to display every elements and is designed with RAII.
 
@@ -171,4 +175,46 @@ int main(int argc, char** argv)
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
   return 0;
-}```
+}
+```
+
+### files
+
+A set of functions to handle files:
+
+- [x] retrieve a list of files in a directory and its sub-directories
+- [x] retrieve a list of directories in a directory and its sub-directories
+- [x] use std::regex to filter files/directories
+- [x] compute the SHA-256 **hash** of a file using `OpenSSL`
+- [x] read the `ctime`, `atime`, `mtime` of a file
+- [x] set the `ctime`, `atime`, `mtime` of a file
+
+```cpp
+#include <iostream>
+#include <winpp/files.hpp>
+
+const std::string directory = "C:\\Windows\\Boot";
+const std::string file = "C:\\Windows\\Boot\\BootDebuggerFiles.ini";
+
+int main(int argc, char** argv)
+{
+  // get all directories in directory and sub-directories
+  const std::vector<std::filesystem::path>& dirs = files::get_dirs(directory);
+  std::cout << "list of directories in: \"" << directory << "\"" << std::endl;
+  for(const auto& d: dirs)
+    std::cout << d.string() << std::endl;
+  std::cout << std::endl;
+
+  // get all files in directory and sub-directories containing ".gitignore"
+  const std::vector<std::filesystem::path>& files = files::get_files(directory, std::regex(R"(\.gitignore)"));
+  std::cout << "list of files in: \"" << directory << "\"" << std::endl;
+  for(const auto& f: files)
+    std::cout << f.string() << std::endl;
+  std::cout << std::endl;
+
+  // get the sha-256 hash of a file using OpenSSL libCrypto API
+  const std::string& hash = files::get_hash(file);
+  std::cout << "hash for: \"" << file << "\" = " << hash << std::endl;
+  return 0;
+}
+```
