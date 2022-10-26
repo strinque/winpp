@@ -22,10 +22,8 @@ To import the library in cmake:
 ```cmake
     find_package(fmt CONFIG REQUIRED)
     find_package(indicators CONFIG REQUIRED)
-    find_package(OpenSSL REQUIRED)
     find_package(winpp CONFIG REQUIRED)
     target_link_libraries(main PRIVATE 
-      OpenSSL::Crypto
       indicators::indicators
       fmt::fmt-header-only
       winpp::winpp)
@@ -185,7 +183,7 @@ A set of functions to handle files:
 - [x] retrieve a list of files in a directory and its sub-directories
 - [x] retrieve a list of directories in a directory and its sub-directories
 - [x] use std::regex to filter files/directories
-- [x] compute the SHA-256 **hash** of a file using `OpenSSL`
+- [x] compute the SHA-256 **hash** of a file using `haspp` header-only library
 - [x] read the `ctime`, `atime`, `mtime` of a file
 - [x] set the `ctime`, `atime`, `mtime` of a file
 
@@ -206,15 +204,14 @@ int main(int argc, char** argv)
   std::cout << std::endl;
 
   // get all files in directory and sub-directories containing ".gitignore"
-  const std::vector<std::filesystem::path>& files = files::get_files(directory, std::regex(R"(\.gitignore)"));
+  const std::vector<std::filesystem::path>& files = files::get_files(directory, std::regex(R"(\.ini)"));
   std::cout << "list of files in: \"" << directory << "\"" << std::endl;
   for(const auto& f: files)
     std::cout << f.string() << std::endl;
   std::cout << std::endl;
 
-  // get the sha-256 hash of a file using OpenSSL libCrypto API
-  const std::string& hash = files::get_hash(file);
-  std::cout << "hash for: \"" << file << "\" = " << hash << std::endl;
+  // get the sha-256 hash of a file using hashpp header-only library
+  std::cout << "hash for: \"" << file << "\" = " << files::get_hash(file) << std::endl;
   return 0;
 }
 ```
