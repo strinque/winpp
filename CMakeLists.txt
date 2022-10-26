@@ -15,6 +15,15 @@ include(GNUInstallDirs)
 add_library(${project_name} INTERFACE)
 add_library(${project_name}::${project_name} ALIAS ${project_name})
 
+# list of required third-party libraries
+find_package(fmt CONFIG REQUIRED)
+
+# set project compile definitions
+target_compile_definitions(${project_name}
+  INTERFACE
+    NOMINMAX
+    FMT_HEADER_ONLY)
+
 target_include_directories(${project_name} 
   INTERFACE
     $<BUILD_INTERFACE:${PROJECT_INCLUDE_DIR}/include>
