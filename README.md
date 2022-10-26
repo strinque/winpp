@@ -8,6 +8,7 @@ Multiples components have been developped:
 - [x] `console.hpp`: initialize windows-console (ascii escape sequence, resize, handle utf8)
 - [x] `utf8.hpp`: handle utf8 convertion using windows api (faster than STL)
 - [x] `parser.hpp`: parse the command-line arguments
+- [x] `progress-bar.hpp`: improved progress-bar based on indicators::ProgressBar
 
 ## Installation
 
@@ -19,8 +20,10 @@ The `winpp` library can be used using modern cmake:
 To import the library in cmake:
 ```cmake
     find_package(fmt CONFIG REQUIRED)
+    find_package(indicators CONFIG REQUIRED)
     find_package(winpp CONFIG REQUIRED)
     target_link_libraries(main PRIVATE 
+      indicators::indicators
       fmt::fmt-header-only
       winpp::winpp)
 ```
@@ -135,3 +138,37 @@ Usage (with arguments):
 debug: true
 file: input.cpp
 ```
+
+### progress-bar
+The header-only `winpp::ProgressBar` class is an enhanced *progress-bar* based on `indicators::ProgressBar`.  
+It only updates every **100ms** instead of trying to display every elements and is designed with RAII.
+
+Features:
+
+- [x] add a prefix to the progress-bar
+- [x] enhanced styling to display progress-bar progression
+- [x] automatically set the suffix with format: "xx% [xx/yy]"
+- [x] doesn't update more than once every 100ms
+- [x] uses RAII => initializes in constructor, clears properly in destructor
+- [x] based on indicators::ProgressBar
+
+```cpp
+#include <vector>
+#include <thread>
+#include <chrono>
+#include <winpp/console.hpp>
+#include <winpp/progress-bar.hpp>
+
+int main(int argc, char** argv)
+{
+  console::init();
+  
+  std::vector<int> vec(500, 1);
+  console::ProgressBar progress_bar("testing: ", vec.size());
+  for (const auto& v : vec)
+  {
+    progress_bar.tick();
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  return 0;
+}```

@@ -5,3 +5,4 @@ if (NOT TARGET winpp::winpp)
 endif ()
 
 check_required_components(fmt)
+check_required_components(indicators)
