@@ -17,6 +17,7 @@ add_library(${project_name}::${project_name} ALIAS ${project_name})
 
 # list of required third-party libraries
 find_package(fmt CONFIG REQUIRED)
+find_package(indicators CONFIG REQUIRED)
 
 # set project compile definitions
 target_compile_definitions(${project_name}
