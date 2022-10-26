@@ -6,3 +6,4 @@ endif ()
 
 check_required_components(fmt)
 check_required_components(indicators)
+check_required_components(openssl)
