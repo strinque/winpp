@@ -6,6 +6,7 @@ A collection of modern c++ header-only libraries primarily for windows.
 
 Multiples components have been developped:
 - [x] `console.hpp`: initialize windows-console (ascii escape sequence, resize, handle utf8)
+- [x] `utf8.hpp`: handle utf8 convertion using windows api (faster than STL)
 
 ## Installation
 
@@ -39,4 +40,20 @@ console::init();
 
 // initialize windows console with utf8 encoding and change size to 1080x620
 console::init(true, 1080, 620);
+```
+
+### utf8
+
+Convert from/to utf8 encoding.
+
+Code:
+```cpp
+#include <winpp/console.hpp>
+#include <winpp/utf8.hpp>
+#include <iostream>
+
+console::init();
+
+std::string str = u8"Japanese: ゴム手袋";
+std::cout << utf8::from_utf8(str) << std::endl;
 ```
