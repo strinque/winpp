@@ -6,9 +6,9 @@
 #include <fstream>
 #include <iomanip>
 #include <sys/stat.h>
-#include <openssl/sha.h>
 #include <fmt/format.h>
 #include <windows.h>
+#include <winpp/hashpp.h>
 
 namespace files
 {
@@ -47,34 +47,14 @@ namespace files
     return files;
   }
 
-  // get the sha-256 hash of a file (using OpenSSL crypto algorithm)
+  // get the sha-256 hash of a file (using hashpp header-only library)
   inline const std::string get_hash(const std::filesystem::path& file)
   {
-    // open file in binary mode
-    std::ifstream f(file, std::ios::binary);
+    // try to open file in binary mode
+    std::ifstream f(file.string(), std::ios::binary);
     if (!f.good())
       throw std::runtime_error(fmt::format("can't open file: \"{}\"", file.filename().string()));
-
-    // initialize hash context
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-
-    // hash the file content
-    unsigned char hash[SHA256_DIGEST_LENGTH] = {};
-    constexpr const std::size_t buf_size{ 1 << 9 };
-    char buf[buf_size];
-    while (f.good())
-    {
-      f.read(buf, buf_size);
-      SHA256_Update(&ctx, buf, f.gcount());
-    }
-    SHA256_Final(hash, &ctx);
-
-    // convert to std::string
-    std::string str;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
-      str += fmt::format("{:02x}", static_cast<unsigned int>(hash[i]));
-    return str;
+    return hashpp::get::getFileHash(hashpp::ALGORITHMS::SHA2_256, file.string()).getString();
   }
 
   // get stat from file
