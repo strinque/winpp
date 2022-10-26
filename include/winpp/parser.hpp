@@ -7,7 +7,6 @@
 #include <fmt/format.h>
 #include <fmt/color.h>
 #include <stdbool.h>
-#include <winpp/utf8.hpp>
 
 namespace console
 {
@@ -96,7 +95,7 @@ namespace console
     template<typename T> void inner_set(const std::string& str);
 
     // define specialized template for the parser
-    template<> void inner_set<std::string>(const std::string& str) { m_value = utf8::to_utf8(str); }
+    template<> void inner_set<std::string>(const std::string& str) { m_value = str; }
     template<> void inner_set<bool>(const std::string& str) { m_value = true; }
     template<> void inner_set<int>(const std::string& str) { m_value = std::stoi(str); }
     template<> void inner_set<unsigned int>(const std::string& str) { m_value = std::stoui(str); }
