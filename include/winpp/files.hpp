@@ -40,18 +40,21 @@ namespace files
   // get all files on a directory and its sub-directories with filtering (by regex)
   inline const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
                                                             const std::regex& dir_pattern,
-                                                            const std::regex& file_pattern)
+                                                            const std::regex& file_pattern,
+                                                            const std::vector<std::filesystem::path>& skip_dirs = {},
+                                                            const std::vector<std::filesystem::path>& skip_files = {})
   {
     auto check_file = [&](const std::filesystem::path& p) -> bool {
       return !std::filesystem::is_directory(p) &&
-             std::regex_search(p.filename().string(), file_pattern);
+             std::regex_search(p.filename().string(), file_pattern) &&
+             std::find(skip_files.begin(), skip_files.end(), p) == skip_files.end();
     };
 
     if (!std::filesystem::is_directory(path))
       throw std::runtime_error(fmt::format("invalid directory: \"{}\"", path.string()));
 
     std::vector<std::filesystem::path> files;
-    const std::vector<std::filesystem::path> dirs = get_dirs(path, dir_pattern);
+    const std::vector<std::filesystem::path>& dirs = get_dirs(path, dir_pattern, skip_dirs);
     for (const auto& dir : dirs)
     {
       for (const auto& entry : std::filesystem::directory_iterator(dir))
@@ -65,10 +68,15 @@ namespace files
 
   // get all files on a directory with filtering on filename (by regex)
   inline const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
-                                                            const std::regex& file_pattern)
+                                                            const std::regex& file_pattern,
+                                                            const std::vector<std::filesystem::path>& skip_files = {})
   {
     const std::string& p = std::regex_replace(path.string(), std::regex(R"(\\)"), "\\\\");
-    return get_files(path, std::regex(fmt::format("^{}$", p)), file_pattern);
+    return get_files(path,
+                     std::regex(fmt::format("^{}$", p)),    // match only the current path => avoid sub-directories
+                     file_pattern,
+                     std::vector<std::filesystem::path>(),  // empty skip directory
+                     skip_files);
   }
 
   // get the sha-256 hash of a file (using hashpp header-only library)
