@@ -187,6 +187,59 @@ A set of functions to handle files:
 - [x] read the `ctime`, `atime`, `mtime` of a file
 - [x] set the `ctime`, `atime`, `mtime` of a file
 
+<h3><code>get_dirs</code></h3>
+Get all directories in directory and sub-directories.  
+Arguments: 
+
+- `path`: directory to analyze
+- `dir_pattern`: filter directories using a std::regex on full directory path (default: accept all)
+- `skip_dirs`: exclude a list of directories (default: skip none)
+
+```cpp
+// get all directories and sub-directories with filtering (by regex on full path name)
+const std::vector<std::filesystem::path> get_dirs(const std::filesystem::path& path,
+                                                  const std::regex& dir_pattern = std::regex(R"(.*)"),
+                                                  const std::vector<std::filesystem::path>& skip_dirs = {});
+```
+
+<h3><code>get_files</code></h3>
+Get all files in the current directory.
+Arguments:
+
+- `path`: directory to analyze
+- `file_pattern`: filter files using a std::regex on filename with extension
+- `skip_files`: exclude a list of files (default: skip none)
+
+```cpp
+const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
+                                                   const std::regex& file_pattern,
+                                                   const std::vector<std::filesystem::path>& skip_files = {});
+```
+
+Get all files in the current directory and sub-directories.  
+Arguments:
+
+- `path`: directory to analyze
+- `dir_pattern`: filter directories using a std::regex on full directory path
+- `file_pattern`: filter files using a std::regex on filename with extension
+- `skip_dirs`: exclude a list of directories (default: skip none)
+- `skip_files`: exclude a list of files (default: skip none)
+
+```cpp
+const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
+                                                   const std::regex& dir_pattern,
+                                                   const std::regex& file_pattern,
+                                                   const std::vector<std::filesystem::path>& skip_dirs = {},
+                                                   const std::vector<std::filesystem::path>& skip_files = {});
+```
+
+<h3><code>get_hash</code></h3>
+Get the sha-256 hash of a file using hashpp header-only library.
+```cpp
+std::string files::get_hash(const std::filesystem::path& file);
+```
+
+<h3>Exemple</h3>
 ```cpp
 #include <iostream>
 #include <winpp/files.hpp>
@@ -199,14 +252,21 @@ int main(int argc, char** argv)
   // get all directories in directory and sub-directories
   const std::vector<std::filesystem::path>& dirs = files::get_dirs(directory);
   std::cout << "list of directories in: \"" << directory << "\"" << std::endl;
-  for(const auto& d: dirs)
+  for (const auto& d : dirs)
     std::cout << d.string() << std::endl;
   std::cout << std::endl;
 
-  // get all files in directory and sub-directories containing ".gitignore"
-  const std::vector<std::filesystem::path>& files = files::get_files(directory, std::regex(R"(\.ini)"));
-  std::cout << "list of files in: \"" << directory << "\"" << std::endl;
-  for(const auto& f: files)
+  // get all files in directory containing ".ini"
+  const std::vector<std::filesystem::path>& direct_files = files::get_files(directory, std::regex(R"(\.ini)"));
+  std::cout << "list of files \"*.ini\" in: \"" << directory << "\"" << std::endl;
+  for (const auto& f : direct_files)
+    std::cout << f.string() << std::endl;
+  std::cout << std::endl;
+
+  // get all files in directory and sub-directories containing "DVD"
+  const std::vector<std::filesystem::path>& all_files = files::get_files(directory, std::regex(R"(DVD)"), std::regex(R"(.*)"));
+  std::cout << "list of files within folders \"DVD\" in: \"" << directory << "\"" << std::endl;
+  for (const auto& f : all_files)
     std::cout << f.string() << std::endl;
   std::cout << std::endl;
 
