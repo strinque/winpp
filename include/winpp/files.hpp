@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <functional>
 #include <sys/stat.h>
 #include <fmt/format.h>
 #include <windows.h>
@@ -12,22 +13,19 @@
 
 namespace files
 {
-  // get all directories and sub-directories with filtering (by regex on full path name)
+  // get all directories and sub-directories with filtering (using a std::function)
   inline const std::vector<std::filesystem::path> get_dirs(const std::filesystem::path& path,
-                                                           const std::regex& dir_pattern = std::regex(R"(.*)"),
-                                                           const std::vector<std::filesystem::path>& skip_dirs = {})
+                                                           const std::function<bool(const std::filesystem::path&)>& dir_filter)
   {
-    auto check_dir = [&](const std::filesystem::path& p) -> bool {
-      return std::filesystem::is_directory(p) &&
-             std::regex_search(p.string(), dir_pattern) &&
-             std::find(skip_dirs.begin(), skip_dirs.end(), p) == skip_dirs.end();
+    const auto& check_dir = [&](const std::filesystem::path& p) -> bool {
+      return std::filesystem::is_directory(p) && dir_filter(p);
     };
 
     if (!std::filesystem::is_directory(path))
       throw std::runtime_error(fmt::format("invalid directory: \"{}\"", path.string()));
 
     std::vector<std::filesystem::path> dirs;
-    if(check_dir(path))
+    if (check_dir(path))
       dirs.push_back(path);
     for (const auto& entry : std::filesystem::recursive_directory_iterator(path))
     {
@@ -37,24 +35,32 @@ namespace files
     return dirs;
   }
 
-  // get all files on a directory and its sub-directories with filtering (by regex)
-  inline const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
-                                                            const std::regex& dir_pattern,
-                                                            const std::regex& file_pattern,
-                                                            const std::vector<std::filesystem::path>& skip_dirs = {},
-                                                            const std::vector<std::filesystem::path>& skip_files = {})
+  // get all directories and sub-directories with filtering (using a std::regex, fullpath for dir)
+  inline const std::vector<std::filesystem::path> get_dirs(const std::filesystem::path& path,
+                                                           const std::regex& dir_regex = std::regex(R"(.*)"),
+                                                           const std::vector<std::filesystem::path>& skip_dirs = {})
   {
-    auto check_file = [&](const std::filesystem::path& p) -> bool {
-      return !std::filesystem::is_directory(p) &&
-             std::regex_search(p.filename().string(), file_pattern) &&
-             std::find(skip_files.begin(), skip_files.end(), p) == skip_files.end();
+    const auto& filter = [&](const std::filesystem::path& p) -> bool {
+      return std::regex_search(p.string(), dir_regex) &&
+             std::find(skip_dirs.begin(), skip_dirs.end(), p) == skip_dirs.end();
+    };
+    return get_dirs(path, filter);
+  }
+
+  // get all files on a directory and its sub-directories with filtering (using a std::function)
+  inline const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
+                                                            const std::function<bool(const std::filesystem::path&)>& dir_filter,
+                                                            const std::function<bool(const std::filesystem::path&)>& file_filter)
+  {
+    const auto& check_file = [&](const std::filesystem::path& p) -> bool {
+      return !std::filesystem::is_directory(p) && file_filter(p);
     };
 
     if (!std::filesystem::is_directory(path))
       throw std::runtime_error(fmt::format("invalid directory: \"{}\"", path.string()));
 
     std::vector<std::filesystem::path> files;
-    const std::vector<std::filesystem::path>& dirs = get_dirs(path, dir_pattern, skip_dirs);
+    const std::vector<std::filesystem::path>& dirs = get_dirs(path, dir_filter);
     for (const auto& dir : dirs)
     {
       for (const auto& entry : std::filesystem::directory_iterator(dir))
@@ -66,17 +72,47 @@ namespace files
     return files;
   }
 
-  // get all files on a directory with filtering on filename (by regex)
+  // get all files on a directory and its sub-directories with filtering (using a std::regex, fullpath for dir, filename with extension for file)
   inline const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
-                                                            const std::regex& file_pattern,
+                                                            const std::regex& dir_regex,
+                                                            const std::regex& file_regex,
+                                                            const std::vector<std::filesystem::path>& skip_dirs = {},
                                                             const std::vector<std::filesystem::path>& skip_files = {})
   {
-    const std::string& p = std::regex_replace(path.string(), std::regex(R"(\\)"), "\\\\");
-    return get_files(path,
-                     std::regex(fmt::format("^{}$", p)),    // match only the current path => avoid sub-directories
-                     file_pattern,
-                     std::vector<std::filesystem::path>(),  // empty skip directory
-                     skip_files);
+    const auto& dir_filter = [&](const std::filesystem::path& p) -> bool {
+      return std::regex_search(p.string(), dir_regex) &&
+             std::find(skip_dirs.begin(), skip_dirs.end(), p) == skip_dirs.end();
+    };
+    const auto& file_filter = [&](const std::filesystem::path& p) -> bool {
+      return std::regex_search(p.filename().string(), file_regex) &&
+             std::find(skip_files.begin(), skip_files.end(), p) == skip_files.end();
+    };
+    return get_files(path, dir_filter, file_filter);
+  }
+
+  // get all files on a directory and sub-directories (if recursive flag is true) with filtering on filename (by regex)
+  inline const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
+                                                            const bool recursive = true,
+                                                            const std::regex& file_regex = std::regex(R"(.*)"),
+                                                            const std::vector<std::filesystem::path>& skip_files = {})
+  {
+    if (recursive)
+    {
+      return get_files(path,
+                       std::regex(R"(.*)"),                   // accept all sub-directories
+                       file_regex, 
+                       {},                                    // empty skip directory
+                       skip_files);
+    }
+    else
+    {
+      const std::string& p = std::regex_replace(path.string(), std::regex(R"(\\)"), "\\\\");
+      return get_files(path,
+                       std::regex(fmt::format("^{}$", p)),    // avoid all sub-directories
+                       file_regex,
+                       {},                                    // empty skip directory
+                       skip_files);
+    }
   }
 
   // get the sha-256 hash of a file (using hashpp header-only library)
