@@ -10,6 +10,7 @@ Multiples components have been developped:
 - [x] `parser.hpp`: parse the command-line arguments
 - [x] `progress-bar.hpp`: improved progress-bar based on indicators::ProgressBar
 - [x] `files.hpp`: set of functions to handle files
+- [x] `win.hpp`: set of generic windows functions (ex: execute a process)
 
 ## Installation
 
@@ -31,34 +32,70 @@ To import the library in cmake:
 
 ## Description
 
-### console
-
-Initialize Windows Console:
-
-- [x] activate utf-8 console mode
-- [x] enable escape sequence (ex: display colors)
-- [x] resize console if necessary
-
-Code:
-```cpp
-#include <winpp/console.hpp>
-
-int main(int argc, char** argv)
-{
-  // initialize windows console with utf8 encoding without changing console size
-  console::init();
-
-  // initialize windows console with utf8 encoding and change size to 1080x620
-  console::init(true, 1080, 620);
-  return 0;
-}
-```
-
 ### utf8
 
 Convert `std::string`/`std::wstring` from/to utf8 encoding.
 
-Code:
+<h3><code>utf8::to_utf8</code></h3>
+
+Convert from extended ascii `std::string` to utf8 `std::string`.  
+Arguments:
+
+- `str`: `std::string` to convert
+
+```cpp
+// from extended ascii to utf8 string
+const std::string utf8::to_utf8(const std::string& str)
+```
+
+Convert from extended ascii `std::wstring` to utf8 `std::string`.  
+Arguments:
+
+- `wstr`: `std::wstring` to convert
+
+```cpp
+// from wide unicode string to utf8 string
+const std::string to_utf8(const std::wstring& wstr)
+```
+
+<h3><code>utf8::from_utf8</code></h3>
+
+Convert from utf8 `std::string` to extended ascii `std::string`.  
+Arguments:
+
+- `str`: `std::string` to convert
+
+```cpp
+// convert from utf8 string to extended ascii
+const std::string utf8::from_utf8(const std::string& str)
+```
+
+<h3><code>utf8::s2ws</code></h3>
+
+Convert `std::string` to `std::wstring`.  
+Arguments:
+
+- `str`: `std::string` to convert
+
+```cpp
+// string to wstring
+const std::wstring utf8::s2ws(const std::string& str)
+```
+
+<h3><code>utf8::ws2s</code></h3>
+
+Convert `std::wstring` to `std::string`.  
+Arguments:
+
+- `wstr`: `std::wstring` to convert
+
+```cpp
+// wstring to string
+const std::string utf8::ws2s(const std::wstring& wstr)
+```
+
+<h3>Usage</h3>
+
 ```cpp
 #include <winpp/console.hpp>
 #include <winpp/utf8.hpp>
@@ -70,6 +107,55 @@ int main(int argc, char** argv)
 
   std::string str = u8"Japanese: ゴム手袋";
   std::cout << utf8::from_utf8(str) << std::endl;
+  return 0;
+}
+```
+
+### console
+
+Initialize Windows Console:
+
+- [x] activate utf-8 console mode
+- [x] enable escape sequence (ex: display colors)
+- [x] resize console if necessary
+
+<h3><code>console::init</code></h3>
+
+Initialize a windows console for ascii escape-sequence and utf8 encoding.  
+Arguments:
+
+- `width`: set the ***width*** of the console (default: -1 = don't set)
+- `height`: set the ***height*** of the console (default: -1 = don't set)
+
+```cpp
+// initialize a Windows console
+void console::init(int width=-1, int height=-1)
+```
+
+<h3><code>console::input</code></h3>
+
+Read user input as utf8.  
+Arguments:
+
+- `password`: display `*` instead of typed characters (for password)
+
+```cpp
+// read user input as utf8
+const std::string console::input(bool password = false)
+```
+
+<h3>Usage</h3>
+
+```cpp
+#include <winpp/console.hpp>
+
+int main(int argc, char** argv)
+{
+  // initialize windows console with utf8 encoding without changing console size
+  console::init();
+
+  // initialize windows console with utf8 encoding and change size to 1080x620
+  console::init(true, 1080, 620);
   return 0;
 }
 ```
@@ -87,7 +173,8 @@ A windows command-line parser:
 - [x] handle "-v, --version" option by default
 - [x] display usage automaticaly when no arguments are provided
 
-Code:
+<h3>Usage</h3>
+
 ```cpp
 #include <iostream>
 #include <string>
@@ -122,7 +209,8 @@ int main(int argc, char** argv)
 }
 ```
 
-Usage (without arguments):
+Call without arguments:
+
 ```bash
 ./program.exe
 usage: program.exe [options]
@@ -133,7 +221,8 @@ usage: program.exe [options]
   -o,  --output      set the output file
 ```
 
-Usage (with arguments):
+Call with arguments:
+
 ```bash
 ./program.exe -f input.cpp --debug
 debug: true
@@ -153,6 +242,8 @@ Features:
 - [x] doesn't update more than once every 100ms
 - [x] uses RAII => initializes in constructor, clears properly in destructor
 - [x] based on indicators::ProgressBar
+
+<h3>Usage</h3>
 
 ```cpp
 #include <vector>
@@ -188,8 +279,9 @@ A set of functions to handle files:
 - [x] read the `ctime`, `atime`, `mtime` of a file
 - [x] set the `ctime`, `atime`, `mtime` of a file
 
-<h3><code>get_dirs</code></h3>
-Get all directories in directory and sub-directories with `std::function` filtering. 
+<h3><code>files::get_dirs</code></h3>
+
+Get all directories in directory and sub-directories with `std::function` filtering.  
 Arguments: 
 
 - `path`: directory to analyze
@@ -197,8 +289,8 @@ Arguments:
 
 ```cpp
 // get all directories and sub-directories with filtering (using a std::function)
-const std::vector<std::filesystem::path> get_dirs(const std::filesystem::path& path,
-                                                  const std::function<bool(const std::filesystem::path&)>& dir_filter)
+const std::vector<std::filesystem::path> files::get_dirs(const std::filesystem::path& path,
+                                                         const std::function<bool(const std::filesystem::path&)>& dir_filter)
 ```
 
 Get all directories in directory and sub-directories with `std::regex` filtering.
@@ -206,16 +298,16 @@ Arguments:
 
 - `path`: directory to analyze
 - `dir_regex`: `std::regex` that determines if the directory is taken (***true***) or not (***false***)
-- `skip_files`: exclude a list of directories (default: skip none)
+- `skip_dirs`: exclude a list of directories (default: skip none)
 
 ```cpp
 // get all directories and sub-directories with filtering (using a std::regex, fullpath for dir)
-const std::vector<std::filesystem::path> get_dirs(const std::filesystem::path& path,
-                                                  const std::regex& dir_regex = std::regex(R"(.*)"),
-                                                  const std::vector<std::filesystem::path>& skip_dirs = {})
+const std::vector<std::filesystem::path> files::get_dirs(const std::filesystem::path& path,
+                                                         const std::regex& dir_regex = std::regex(R"(.*)"),
+                                                         const std::vector<std::filesystem::path>& skip_dirs = {})
 ```
 
-<h3><code>get_files</code></h3>
+<h3><code>files::get_files</code></h3>
 Get all files in directory and sub-directories with `std::function` filtering.  
 Arguments:
 
@@ -225,9 +317,9 @@ Arguments:
 
 ```cpp
 // get all files on a directory and its sub-directories with filtering (using a std::function)
-const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
-                                                   const std::function<bool(const std::filesystem::path&)>& dir_filter,
-                                                   const std::function<bool(const std::filesystem::path&)>& file_filter)
+const std::vector<std::filesystem::path> files::get_files(const std::filesystem::path& path,
+                                                          const std::function<bool(const std::filesystem::path&)>& dir_filter,
+                                                          const std::function<bool(const std::filesystem::path&)>& file_filter)
 ```
 
 Get all files in directory and sub-directories with `std::regex` filtering.  
@@ -241,7 +333,7 @@ Arguments:
 
 ```cpp
 // get all files on a directory and its sub-directories with filtering (using a std::regex, fullpath for dir, filename with extension for file)
-inline const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
+const std::vector<std::filesystem::path> files::get_files(const std::filesystem::path& path,
                                                           const std::regex& dir_regex,
                                                           const std::regex& file_regex,
                                                           const std::vector<std::filesystem::path>& skip_dirs = {},
@@ -257,22 +349,25 @@ Arguments:
 - `skip_files`: exclude a list of files (default: skip none)
 
 ```cpp
-
-  // get all files on a directory and sub-directories (if recursive flag is true) with filtering on filename (by regex)
-  inline const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
-                                                            const bool recursive = true,
-                                                            const std::regex& file_regex = std::regex(R"(.*)"),
-                                                            const std::vector<std::filesystem::path>& skip_files = {})
+// get all files on a directory and sub-directories (if recursive flag is true) with filtering on filename (by regex)
+const std::vector<std::filesystem::path> files::get_files(const std::filesystem::path& path,
+                                                          const bool recursive = true,
+                                                          const std::regex& file_regex = std::regex(R"(.*)"),
+                                                          const std::vector<std::filesystem::path>& skip_files = {})
 ```
 
-<h3><code>get_hash</code></h3>
-Get the sha-256 hash of a file using hashpp header-only library.
+<h3><code>files::get_hash</code></h3>
+Get the sha-256 hash of a file using hashpp header-only library.  
+Arguments:
+
+- `file`: file to analyze
 
 ```cpp
+// get the sha-256 hash of a file
 std::string files::get_hash(const std::filesystem::path& file);
 ```
 
-<h3>Exemple</h3>
+<h3>Usage</h3>
 
 ```cpp
 #include <iostream>
@@ -324,6 +419,48 @@ int main(int argc, char** argv)
   
   // get the sha-256 hash of a file using hashpp header-only library
   std::cout << "hash for: \"" << file << "\" = " << files::get_hash(file) << std::endl;
+  return 0;
+}
+```
+
+### win
+
+A set of functions to handle windows specific api:
+
+- [x] execute a windows process and retrieve the output - blocking
+
+<h3><code>win::execute</code></h3>
+Execute a windows process and retrieve the output of the console in a `std::string`.  
+This is a blocking api.  
+Arguments:
+
+- `cmd`: command-line to execute
+- `working_directory`: set the working-directory of the process
+- `logs`: output the logs in this `std::string`
+- `default_error_code`: default error code when the process fails (default: -1)
+
+```cpp
+// execute a windows process - blocking
+int win::execute(const std::string& cmd,
+                 const std::filesystem::path& working_directory = std::filesystem::current_path(),
+                 std::string& logs = std::string(),
+                 const int default_error_code = -1)
+```
+
+<h3>Usage</h3>
+
+```cpp
+#include <iostream>
+#include <winpp/win.hpp>
+
+int main(int argc, char** argv)
+{
+  const std::string cmd = "git.exe";
+  std::string logs;
+  std::cout << "execute process: " << cmd << std::endl;
+  int exit_code = win::execute(cmd, logs);
+  std::cout << "process executed with exit-code: " << std::to_string(exit_code) << std::endl;
+  std::cout << logs << std::endl;
   return 0;
 }
 ```
