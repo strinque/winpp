@@ -140,13 +140,13 @@ namespace files
                              const uint64_t atime,
                              const uint64_t mtime)
   {
-    HANDLE fp = CreateFile(file.string().c_str(),
-                           GENERIC_WRITE,
-                           FILE_SHARE_WRITE,
-                           NULL,
-                           OPEN_EXISTING,
-                           FILE_ATTRIBUTE_NORMAL,
-                           NULL);
+    HANDLE fp = CreateFileA(file.string().c_str(),
+                            GENERIC_WRITE,
+                            FILE_SHARE_WRITE,
+                            NULL,
+                            OPEN_EXISTING,
+                            FILE_ATTRIBUTE_NORMAL,
+                            NULL);
     if (fp != INVALID_HANDLE_VALUE)
     {
       auto to_ts = [](const uint64_t ts) { return (ts * 10000000) + 116444736000000000; };

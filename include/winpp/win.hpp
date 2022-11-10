@@ -47,11 +47,11 @@ namespace win
         throw std::runtime_error(fmt::format("SetHandleInformation failed with error: 0x{:x}", GetLastError()));
 
       // set utf8 encoding input/output for python
-      if (!SetEnvironmentVariable("PYTHONIOENCODING", "utf8"))
+      if (!SetEnvironmentVariableA("PYTHONIOENCODING", "utf8"))
         throw std::runtime_error(fmt::format("SetEnvironmentVariable failed with error: 0x{:x}", GetLastError()));
 
       // setup members of STARTUPINFO
-      STARTUPINFO si{};
+      STARTUPINFOA si{};
       si.cb = sizeof(si);
       si.hStdInput = reinterpret_cast<HANDLE>(-1);// GetStdHandle(STD_INPUT_HANDLE);
       si.hStdOutput = stdout_wr;
@@ -61,16 +61,16 @@ namespace win
 
       // create the child process
       std::string args = cmd;
-      if (!CreateProcess(nullptr,                             // no module name
-                         args.data(),                         // command line 
-                         nullptr,                             // process security attributes 
-                         nullptr,                             // primary thread security attributes 
-                         true,                                // handles are inherited 
-                         CREATE_NO_WINDOW,                    // creation flags 
-                         nullptr,                             // use parent's environment 
-                         working_directory.string().c_str(),  // set working directory 
-                         &si,                                 // pointer to STARTUPINFO structure 
-                         &pi))                                // pointer to PROCESS_INFORMATION structure
+      if (!CreateProcessA(nullptr,                             // no module name
+                          args.data(),                         // command line 
+                          nullptr,                             // process security attributes 
+                          nullptr,                             // primary thread security attributes 
+                          true,                                // handles are inherited 
+                          CREATE_NO_WINDOW,                    // creation flags 
+                          nullptr,                             // use parent's environment 
+                          working_directory.string().c_str(),  // set working directory 
+                          &si,                                 // pointer to STARTUPINFO structure 
+                          &pi))                                // pointer to PROCESS_INFORMATION structure
         throw std::runtime_error(fmt::format("CreateProcess failed with error: 0x{:x}", GetLastError()));
 
       // close pipes we don't need anymore
@@ -113,22 +113,5 @@ namespace win
 
     // return exit code
     return exit_code;
-  }
-
-  // execute a windows process - blocking
-  inline int execute(const std::string& cmd,
-                     const std::filesystem::path& working_directory = std::filesystem::current_path(),
-                     const int default_error_code = -1)
-  {
-    std::string logs;
-    return execute(cmd, working_directory, logs, default_error_code);
-  }
-
-  // execute a windows process - blocking
-  inline int execute(const std::string& cmd,
-                     std::string& logs = std::string(),
-                     const int default_error_code = -1)
-  {
-    return execute(cmd, std::filesystem::current_path(), logs, default_error_code);
   }
 }
