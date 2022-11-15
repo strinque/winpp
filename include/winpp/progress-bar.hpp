@@ -10,13 +10,13 @@ namespace console
 {
   // Improved indicators::ProgressBar which only updates every 100ms
   // with new style and progress-bar suffix such as "13% [25/200]"
-  class ProgressBar final
+  class progress_bar final
   {
   public:
     // constructor
-    ProgressBar(const std::string& prefix,
-                const std::size_t size,
-                const std::size_t width = 35) :
+    progress_bar(const std::string& prefix,
+                 const std::size_t size,
+                 const std::size_t width = 35) :
       m_bar(),
       m_size(size),
       m_current(0),
@@ -35,7 +35,7 @@ namespace console
     }
 
     // destructor
-    ~ProgressBar()
+    ~progress_bar()
     {
       if (m_size && (m_current != m_size))
       {
