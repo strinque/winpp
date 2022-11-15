@@ -3,10 +3,11 @@
 #include <windows.h>
 #include <string>
 #include <memory>
-#define MAX_INPUT_LENGTH  256
 
 namespace console
 {
+  constexpr uint16_t max_input_length = 256;
+
   // initialize a Windows console
   inline void init(int width=-1, int height=-1)
   {
@@ -45,16 +46,16 @@ namespace console
     SetConsoleMode(hi, mode);
 
     // allocate buffers the size of the output - raii
-    std::unique_ptr<char[]> buf = std::make_unique<char[]>(MAX_INPUT_LENGTH);
-    std::unique_ptr<WCHAR[]> wbuf = std::make_unique<WCHAR[]>(MAX_INPUT_LENGTH);
+    std::unique_ptr<char[]> buf = std::make_unique<char[]>(max_input_length);
+    std::unique_ptr<WCHAR[]> wbuf = std::make_unique<WCHAR[]>(max_input_length);
 
     // read and convert to UTF-8
     DWORD nread;
-    ReadConsoleW(hi, wbuf.get(), MAX_INPUT_LENGTH, &nread, 0);
+    ReadConsoleW(hi, wbuf.get(), max_input_length, &nread, 0);
     if (nread >= 2)
     {
       wbuf[nread - 2] = 0;  // truncate "\r\n"
-      WideCharToMultiByte(CP_UTF8, 0, wbuf.get(), -1, buf.get(), MAX_INPUT_LENGTH, 0, 0);
+      WideCharToMultiByte(CP_UTF8, 0, wbuf.get(), -1, buf.get(), max_input_length, 0, 0);
     }
 
     // write trailing line
