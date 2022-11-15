@@ -231,7 +231,7 @@ file: input.cpp
 
 ### progress-bar
 
-The header-only `winpp::ProgressBar` class is an enhanced *progress-bar* based on `indicators::ProgressBar`.  
+The header-only `winpp::progress_bar` class is an enhanced *progress-bar* based on `indicators::ProgressBar`.  
 It only updates every **100ms** instead of trying to display every elements and is designed with RAII.
 
 Features:
@@ -257,7 +257,7 @@ int main(int argc, char** argv)
   console::init();
   
   std::vector<int> vec(500, 1);
-  console::ProgressBar progress_bar("testing: ", vec.size());
+  console::progress_bar progress_bar("testing: ", vec.size());
   for (const auto& v : vec)
   {
     progress_bar.tick();
@@ -425,42 +425,147 @@ int main(int argc, char** argv)
 
 ### win
 
-A set of functions to handle windows specific api:
+A set of classes and functions to handle windows specific api:
 
-- [x] execute a windows process and retrieve the output - blocking
+- [x] function: `win::execute` to execute a windows process in blocking mode and retrieve logs
+- [x] class: `win::sync_process` to execute a windows process in blocking mode and retrieve logs
+- [x] class: `win::async_process` to execute a windows process in non-blocking mode and retrieve logs
 
 <h3><code>win::execute</code></h3>
-Execute a windows process and retrieve the output of the console in a `std::string`.  
-This is a blocking api.  
+Function to execute a windows process and retrieve the output of the console in a `std::string`.  
+This is a **blocking** api.
 Arguments:
 
 - `cmd`: command-line to execute
+- `logs`: write all the process logs in this `std::string`
 - `working_directory`: set the working-directory of the process
-- `logs`: output the logs in this `std::string`
+- `timeout`: stop the process after a given timeout (in milliseconds)
 - `default_error_code`: default error code when the process fails (default: -1)
 
 ```cpp
 // execute a windows process - blocking
-int win::execute(const std::string& cmd,
-                 const std::filesystem::path& working_directory = std::filesystem::current_path(),
-                 std::string& logs = std::string(),
-                 const int default_error_code = -1)
+int execute(const std::string& cmd,
+            std::string& logs = std::string(),
+            const std::filesystem::path& working_directory = std::filesystem::current_path(),
+            const std::chrono::milliseconds timeout = std::chrono::milliseconds::max(),
+            const int default_error_code = -1)
 ```
 
 <h3>Usage</h3>
 
 ```cpp
 #include <iostream>
+#include <winpp/console.hpp>
 #include <winpp/win.hpp>
 
 int main(int argc, char** argv)
 {
-  const std::string cmd = "git.exe";
+  // initialize Windows console
+  console::init();
+
+  // execute program - function api: blocking mode
+  std::cout << "execute program - function api: blocking mode" << std::endl;
   std::string logs;
-  std::cout << "execute process: " << cmd << std::endl;
-  int exit_code = win::execute(cmd, logs);
-  std::cout << "process executed with exit-code: " << std::to_string(exit_code) << std::endl;
+  int exit_code = win::execute("ping 127.0.0.1", logs);
+  std::cout << "exit code: " << std::to_string(exit_code) << std::endl;
   std::cout << logs << std::endl;
+  return 0;
+}
+```
+
+<h3><code>win::sync_process</code></h3>
+Class to execute a windows process and retrieve the output of the console.  
+This is a **blocking** api that can be interrupted using the `stop()` function.  
+
+<h3>Usage</h3>
+
+```cpp
+#include <iostream>
+#include <signal.h>
+#include <winpp/console.hpp>
+#include <winpp/win.hpp>
+
+// defined in global to be accessible via exit_program()
+win::sync_process g_proc;
+
+// define the function to be called when ctrl-c is sent to process
+void exit_program(int signum)
+{
+  std::cout << "event: ctrl-c called => stopping program" << std::endl;
+  g_proc.stop();
+}
+
+int main(int argc, char** argv)
+{
+  // initialize Windows console
+  console::init();
+
+  // register signal handler
+  signal(SIGINT, exit_program);
+
+  // execute program - class api: blocking mode
+  std::cout << "execute program - class api: blocking mode" << std::endl;
+  g_proc.set_timeout(std::chrono::milliseconds(3000));
+  g_proc.set_working_dir(".");
+  g_proc.set_default_error_code(-1);
+  int exit_code = g_proc.execute("ping 127.0.0.1 -n 6");
+  std::cout << "exit code: " << std::to_string(exit_code) << std::endl;
+  std::cout << g_proc.get_logs() << std::endl;
+  return 0;
+}
+```
+
+<h3><code>win::async_process</code></h3>
+Class to execute a windows process and retrieve the output of the console.  
+This is a **non-blocking** api that can be interrupted using the `stop()` function.  
+
+The `execute` function requires two optional arguments: 
+
+ - one callback that will be called when logs are gathered: cb_logs
+ - one callback that will be called when the process terminates/stops: cb_exit
+
+<h3>Usage</h3>
+
+```cpp
+#include <iostream>
+#include <mutex>
+#include <condition_variable>
+#include <winpp/console.hpp>
+#include <winpp/win.hpp>
+
+int main(int argc, char** argv)
+{
+  // initialize Windows console
+  console::init();
+
+  // execute program - class api: non-blocking mode
+  {
+    // callback called to display program's logs
+    auto& cb_logs = [](const std::string& logs) {
+      std::cout << logs;
+    };
+
+    // callback called when program terminates
+    int exit_code = -1;
+    bool program_running = true;
+    std::mutex mtx;
+    std::condition_variable cv;
+    auto& cb_exit = [&](const int _exit_code) {
+      exit_code = _exit_code;
+      program_running = false;
+      cv.notify_one();
+    };
+
+    std::cout << "execute program - class api: non-blocking mode" << std::endl;
+    win::async_process proc;
+    if (proc.execute("ping 127.0.0.1 -n 6", cb_logs, cb_exit))
+    {
+      std::cout << "waiting for process to terminate" << std::endl;
+      std::unique_lock<std::mutex> lck(mtx);
+      cv.wait(lck, [&] {return !program_running; });
+      std::cout << "exit code: " << std::to_string(exit_code) << std::endl;
+    }
+  }
   return 0;
 }
 ```
