@@ -19,11 +19,11 @@ namespace console
                const std::string& _full,
                const std::string& _desc,
                bool _mandatory) :
-               m_short(_short),
-               m_full(_full),
-               m_desc(_desc),
-               m_mandatory(_mandatory),
-               m_defined(false) {}
+      m_short(_short),
+      m_full(_full),
+      m_desc(_desc),
+      m_mandatory(_mandatory),
+      m_defined(false) {}
     virtual ~OptionBase() = default;
 
     // getters
@@ -62,10 +62,7 @@ namespace console
                 _full,
                 _desc,
                 _mandatory),
-      m_value(_value)
-    {
-      m_value = T();
-    }
+      m_value(_value) {}
     ~Option() = default;
 
     // check if the option has an argument
