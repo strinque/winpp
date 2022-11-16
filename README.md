@@ -72,26 +72,28 @@ const std::string utf8::from_utf8(const std::string& str)
 
 <h3><code>utf8::s2ws</code></h3>
 
-Convert `std::string` to `std::wstring`.  
+Convert `std::string` to `std::wstring` using the selected **code-page**.  
 Arguments:
 
 - `str`: `std::string` to convert
+- `code_page`: code-page used for convertion
 
 ```cpp
-// string to wstring
-const std::wstring utf8::s2ws(const std::string& str)
+// convert string to wstring using the code_page
+const std::wstring s2ws(const std::string& str, const UINT code_page)
 ```
 
 <h3><code>utf8::ws2s</code></h3>
 
-Convert `std::wstring` to `std::string`.  
+Convert `std::wstring` to `std::string` using the selected **code-page**.  
 Arguments:
 
 - `wstr`: `std::wstring` to convert
+- `code_page`: code-page used for convertion
 
 ```cpp
-// wstring to string
-const std::string utf8::ws2s(const std::wstring& wstr)
+// convert wstring to string using the code_page
+const std::string ws2s(const std::wstring& wstr, const UINT code_page)
 ```
 
 <h3>Usage</h3>
