@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <sstream>
+#include <filesystem>
 #include <memory>
 #include <algorithm>
 #include <fmt/core.h>
@@ -88,21 +90,64 @@ namespace console
       }
     }
 
+  private:
     // forbid non specialized template for the parser
     template<typename T> void inner_set(const std::string& str);
 
     // define specialized template for the parser
-    template<> void inner_set<std::string>(const std::string& str) { m_value = str; }
-    template<> void inner_set<bool>(const std::string& str) { m_value = true; }
-    template<> void inner_set<int>(const std::string& str) { m_value = std::stoi(str); }
-    template<> void inner_set<unsigned int>(const std::string& str) { m_value = std::stoui(str); }
-    template<> void inner_set<long>(const std::string& str) { m_value = std::stol(str); }
-    template<> void inner_set<unsigned long>(const std::string& str) { m_value = std::stoul(str); }
-    template<> void inner_set<long long>(const std::string& str) { m_value = std::stoll(str); }
-    template<> void inner_set<unsigned long long>(const std::string& str) { m_value = std::stoull(str); }
-    template<> void inner_set<double>(const std::string& str) { m_value = std::stod(str); }
-    template<> void inner_set<long double>(const std::string& str) { m_value = std::stold(str); }
-    template<> void inner_set<float>(const std::string& str) { m_value = std::stof(str); }
+    template<> void inner_set<std::string>(const std::string& str) { m_value = decode<std::string>(str); }
+    template<> void inner_set<std::filesystem::path>(const std::string& str) { m_value = decode<std::filesystem::path>(str); }
+    template<> void inner_set<bool>(const std::string& str) { m_value = decode<bool>(str); }
+    template<> void inner_set<int>(const std::string& str) { m_value = decode<int>(str); }
+    template<> void inner_set<unsigned int>(const std::string& str) { m_value = decode<unsigned int>(str); }
+    template<> void inner_set<long>(const std::string& str) { m_value = decode<long>(str); }
+    template<> void inner_set<unsigned long>(const std::string& str) { m_value = decode<unsigned long>(str); }
+    template<> void inner_set<long long>(const std::string& str) { m_value = decode<long long>(str); }
+    template<> void inner_set<unsigned long long>(const std::string& str) { m_value = decode<unsigned long long>(str); }
+    template<> void inner_set<double>(const std::string& str) { m_value = decode<double>(str); }
+    template<> void inner_set<long double>(const std::string& str) { m_value = decode<long double>(str); }
+    template<> void inner_set<float>(const std::string& str) { m_value = decode<float>(str); }
+
+    // define specialized vector template for the parser
+    template<> void inner_set<std::vector<std::string>>(const std::string& str) { m_value = split<std::string>(str); }
+    template<> void inner_set<std::vector<std::filesystem::path>>(const std::string& str) { m_value = split<std::filesystem::path>(str); }
+    template<> void inner_set<std::vector<bool>>(const std::string& str) { m_value = split<bool>(str); }
+    template<> void inner_set<std::vector<int>>(const std::string& str) { m_value = split<int>(str); }
+    template<> void inner_set<std::vector<unsigned int>>(const std::string& str) { m_value = split<unsigned int>(str); }
+    template<> void inner_set<std::vector<long>>(const std::string& str) { m_value = split<long>(str); }
+    template<> void inner_set<std::vector<unsigned long>>(const std::string& str) { m_value = split<unsigned long>(str); }
+    template<> void inner_set<std::vector<long long>>(const std::string& str) { m_value = split<long long>(str); }
+    template<> void inner_set<std::vector<unsigned long long>>(const std::string& str) { m_value = split<unsigned long long>(str); }
+    template<> void inner_set<std::vector<double>>(const std::string& str) { m_value = split<double>(str); }
+    template<> void inner_set<std::vector<long double>>(const std::string& str) { m_value = split<long double>(str); }
+    template<> void inner_set<std::vector<float>>(const std::string& str) { m_value = split<float>(str); }
+
+    // decode string as custom types
+    template<typename T> T decode(const std::string& str);
+    template<> std::string decode<std::string>(const std::string& str) { return str; }
+    template<> std::filesystem::path decode<std::filesystem::path>(const std::string& str) { return std::filesystem::absolute(std::filesystem::path(str)); }
+    template<> bool decode<bool>(const std::string& str) { return true; }
+    template<> int decode<int>(const std::string& str) { return std::stoi(str); }
+    template<> unsigned int decode<unsigned int>(const std::string& str) { return std::stoui(str); }
+    template<> long decode<long>(const std::string& str) { return std::stol(str); }
+    template<> unsigned long decode<unsigned long>(const std::string& str) { return std::stoul(str); }
+    template<> long long decode<long long>(const std::string& str) { return std::stoll(str); }
+    template<> unsigned long long decode<unsigned long long>(const std::string& str) { return std::stoull(str); }
+    template<> double decode<double>(const std::string& str) { return std::stod(str); }
+    template<> long double decode<long double>(const std::string& str) { return std::stold(str); }
+    template<> float decode<float>(const std::string& str) { return std::stof(str); }
+
+    // split string into a vector of T
+    template<typename T>
+    std::vector<T> split(const std::string& str)
+    {
+      std::vector<T> tokens;
+      std::istringstream ss(str);
+      std::string token;
+      while (std::getline(ss, token, ';'))
+        tokens.push_back(decode<T>(token));
+      return tokens;
+    }
 
   private:
     T& m_value;     // reference to the original argument
