@@ -193,10 +193,12 @@ int main(int argc, char** argv)
   bool debug = false;
   std::string file;
   std::string output;
+  std::vector<float> vfloat;
   console::parser parser("program", "1.0");
-  parser.add("d", "debug", "activate the debug mode", debug); // flag (default: false)
-  parser.add("f", "file", "read the file", file, true);       // std::string argument (mandatory)
-  parser.add("o", "output", "set the output file", output);   // std::string argument (optional)
+  parser.add("d", "debug", "activate the debug mode", debug)  // flag (default: false)
+        .add("f", "file", "read the file", file, true)        // std::string argument (mandatory)
+        .add("o", "output", "set the output file", output)    // std::string argument (optional)
+        .add("v", "vfloat", "list of float", vfloat);
   if (!parser.parse(argc, argv))
   {
     parser.print_usage();
@@ -207,6 +209,8 @@ int main(int argc, char** argv)
   std::cout << "file: " << file << std::endl;
   if(!output.empty())
     std::cout << "output: " << output << std::endl;
+  for (const auto& v: vfloat)
+    std::cout << "float: " << v << std::endl;
   return 0;
 }
 ```
@@ -226,9 +230,11 @@ usage: program.exe [options]
 Call with arguments:
 
 ```bash
-./program.exe -f input.cpp --debug
+./program.exe -f input.cpp --debug --vfloat "3.2;54.9"
 debug: true
 file: input.cpp
+float: 3.2
+float: 54.9
 ```
 
 ### progress-bar
@@ -287,26 +293,30 @@ Get all directories in directory and sub-directories with `std::function` filter
 Arguments: 
 
 - `path`: directory to analyze
+- `depth`: depth of the analyze (files::infinite_depth for infinite recursive)
 - `dir_filter`: `std::function` that determines if the directory is taken (***true***) or not (***false***)
 
 ```cpp
 // get all directories and sub-directories with filtering (using a std::function)
-const std::vector<std::filesystem::path> files::get_dirs(const std::filesystem::path& path,
-                                                         const std::function<bool(const std::filesystem::path&)>& dir_filter)
+const std::vector<std::filesystem::path> get_dirs(const std::filesystem::path& path,
+                                                  const int depth,
+                                                  const std::function<bool(const std::filesystem::path&)>& dir_filter)
 ```
 
 Get all directories in directory and sub-directories with `std::regex` filtering.
 Arguments:
 
 - `path`: directory to analyze
+- `depth`: depth of the analyze (files::infinite_depth for infinite recursive)
 - `dir_regex`: `std::regex` that determines if the directory is taken (***true***) or not (***false***)
 - `skip_dirs`: exclude a list of directories (default: skip none)
 
 ```cpp
-// get all directories and sub-directories with filtering (using a std::regex, fullpath for dir)
-const std::vector<std::filesystem::path> files::get_dirs(const std::filesystem::path& path,
-                                                         const std::regex& dir_regex = std::regex(R"(.*)"),
-                                                         const std::vector<std::filesystem::path>& skip_dirs = {})
+// get all directories and sub-directories with filtering (using a std::regex, fullpath for skip_dirs)
+const std::vector<std::filesystem::path> get_dirs(const std::filesystem::path& path,
+                                                  const int depth = infinite_depth,
+                                                  const std::regex& dir_regex = all_dirs,
+                                                  const std::vector<std::filesystem::path>& skip_dirs = {})
 ```
 
 <h3><code>files::get_files</code></h3>
@@ -314,20 +324,26 @@ Get all files in directory and sub-directories with `std::function` filtering.
 Arguments:
 
 - `path`: directory to analyze
+- `depth`: depth of the analyze (files::infinite_depth for infinite recursive)
+- `include_dirs`: add the directories to the list of files (default: false)
 - `dir_filter`: `std::function` that determines if the directory is taken (***true***) or not (***false***)
 - `file_filter`: `std::function` that determines if the filename is taken (***true***) or not (***false***)
 
 ```cpp
 // get all files on a directory and its sub-directories with filtering (using a std::function)
-const std::vector<std::filesystem::path> files::get_files(const std::filesystem::path& path,
-                                                          const std::function<bool(const std::filesystem::path&)>& dir_filter,
-                                                          const std::function<bool(const std::filesystem::path&)>& file_filter)
+const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
+                                                   const int depth,
+                                                   const bool include_dirs,
+                                                   const std::function<bool(const std::filesystem::path&)>& dir_filter,
+                                                   const std::function<bool(const std::filesystem::path&)>& file_filter)
 ```
 
 Get all files in directory and sub-directories with `std::regex` filtering.  
 Arguments:
 
 - `path`: directory to analyze
+- `depth`: depth of the analyze (files::infinite_depth for infinite recursive)
+- `include_dirs`: add the directories to the list of files (default: false)
 - `dir_regex`: `std::function` that determines if the directory is taken (***true***) or not (***false***)
 - `file_regex`: `std::function` that determines if the filename is taken (***true***) or not (***false***)
 - `skip_dirs`: exclude a list of directories (default: skip none)
@@ -335,27 +351,13 @@ Arguments:
 
 ```cpp
 // get all files on a directory and its sub-directories with filtering (using a std::regex, fullpath for dir, filename with extension for file)
-const std::vector<std::filesystem::path> files::get_files(const std::filesystem::path& path,
-                                                          const std::regex& dir_regex,
-                                                          const std::regex& file_regex,
-                                                          const std::vector<std::filesystem::path>& skip_dirs = {},
-                                                          const std::vector<std::filesystem::path>& skip_files = {})
-```
-
-Get all files in directory and sub-directories (***recursive*** = true) or only in the directory (***recursive*** = false) with `std::regex` filtering.  
-Arguments:
-
-- `path`: directory to analyze
-- `recursive`: get files recursively (***true***) or not (***false***)
-- `file_regex`: `std::function` that determines if the filename is taken (***true***) or not (***false***)
-- `skip_files`: exclude a list of files (default: skip none)
-
-```cpp
-// get all files on a directory and sub-directories (if recursive flag is true) with filtering on filename (by regex)
-const std::vector<std::filesystem::path> files::get_files(const std::filesystem::path& path,
-                                                          const bool recursive = true,
-                                                          const std::regex& file_regex = std::regex(R"(.*)"),
-                                                          const std::vector<std::filesystem::path>& skip_files = {})
+const std::vector<std::filesystem::path> get_files(const std::filesystem::path& path,
+                                                   const int depth = infinite_depth,
+                                                   const bool include_dirs = false,
+                                                   const std::regex& dir_regex = all_dirs,
+                                                   const std::regex& file_regex = all_files,
+                                                   const std::vector<std::filesystem::path>& skip_dirs = {},
+                                                   const std::vector<std::filesystem::path>& skip_files = {})
 ```
 
 <h3><code>files::get_hash</code></h3>
@@ -363,10 +365,12 @@ Get the sha-256 hash of a file using hashpp header-only library.
 Arguments:
 
 - `file`: file to analyze
+- `algorithm`: algorithm used for the hash (default: SHA2_256)
 
 ```cpp
 // get the sha-256 hash of a file
-std::string files::get_hash(const std::filesystem::path& file);
+const std::string get_hash(const std::filesystem::path& file, 
+                           const hashpp::ALGORITHMS& algorithm = hashpp::ALGORITHMS::SHA2_256)
 ```
 
 <h3>Usage</h3>
@@ -383,7 +387,7 @@ int main(int argc, char** argv)
   {
     // list all directories and sub-directories
     //  using std::regex filter (path containing "\DVD")
-    const std::vector<std::filesystem::path>& dirs = files::get_dirs(directory, std::regex(R"(\\DVD)"));
+    const std::vector<std::filesystem::path>& dirs = files::get_dirs(directory, files::infinite_depth, std::regex(R"(\\DVD)"));
     for (const auto& d : dirs)
       std::cout << d.string() << std::endl;
     std::cout << std::endl;
@@ -392,7 +396,11 @@ int main(int argc, char** argv)
   {
     // list all files in directory and sub-directories
     //   using std::regex filter (filename finishing with ".exe")
-    const std::vector<std::filesystem::path>& files = files::get_files(directory, true, std::regex(R"(\.exe$)"));
+    const std::vector<std::filesystem::path>& files = files::get_files(directory,
+                                                                       files::infinite_depth,
+                                                                       false,
+                                                                       files::all_dirs,
+                                                                       std::regex(R"(\.exe$)"));
     for (const auto& f : files)
       std::cout << f.string() << std::endl;
     std::cout << std::endl;
@@ -409,16 +417,19 @@ int main(int argc, char** argv)
     const std::regex ext(R"(\.dll$)");
     const auto& file_filter = [&](const std::filesystem::path& p) -> bool {
       return p.filename().string().size() < 14 &&
-             std::regex_search(p.filename().string(), ext);
-             
+        std::regex_search(p.filename().string(), ext);
     };
 
-    const std::vector<std::filesystem::path>& files = files::get_files(directory, dir_filter, file_filter);
+    const std::vector<std::filesystem::path>& files = files::get_files(directory,
+                                                                       files::infinite_depth,
+                                                                       false,
+                                                                       dir_filter,
+                                                                       file_filter);
     for (const auto& f : files)
       std::cout << f.string() << std::endl;
     std::cout << std::endl;
   }
-  
+
   // get the sha-256 hash of a file using hashpp header-only library
   std::cout << "hash for: \"" << file << "\" = " << files::get_hash(file) << std::endl;
   return 0;
