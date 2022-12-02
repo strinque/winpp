@@ -35,11 +35,12 @@ namespace files
 
     std::vector<std::filesystem::path> dirs;
     auto entry = std::filesystem::recursive_directory_iterator(path);
-    do
+    while (entry != std::filesystem::recursive_directory_iterator())
     {
       if (check_dir(entry->path(), entry.depth()))
         dirs.push_back(entry->path());
-    } while (++entry != std::filesystem::recursive_directory_iterator());
+      ++entry;
+    }
     return dirs;
   }
 
@@ -94,11 +95,12 @@ namespace files
     else
     {
       auto entry = std::filesystem::recursive_directory_iterator(path);
-      do
+      while (entry != std::filesystem::recursive_directory_iterator())
       {
         if (check(entry->path(), entry.depth()))
           files.push_back(entry->path());
-      } while (++entry != std::filesystem::recursive_directory_iterator());
+        ++entry;
+      }
     }
     return files;
   }
