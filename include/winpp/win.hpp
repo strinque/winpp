@@ -227,9 +227,6 @@ namespace win
           buf[len] = 0;
           logs += buf;
         }
-        if (GetLastError() != ERROR_SUCCESS &&
-            GetLastError() != ERROR_BROKEN_PIPE)
-          break;
       }
       return logs;
     }
