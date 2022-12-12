@@ -11,6 +11,7 @@ Multiples components have been developped:
 - [x] `progress-bar.hpp`: improved progress-bar based on indicators::ProgressBar
 - [x] `files.hpp`: set of functions to handle files
 - [x] `win.hpp`: set of generic windows functions (ex: execute a process)
+- [x] `system-mutex.hpp`: system wide named lock mutex
 
 ## Installation
 
@@ -443,6 +444,7 @@ A set of classes and functions to handle windows specific api:
 - [x] function: `win::execute` to execute a windows process in blocking mode and retrieve logs
 - [x] class: `win::sync_process` to execute a windows process in blocking mode and retrieve logs
 - [x] class: `win::async_process` to execute a windows process in non-blocking mode and retrieve logs
+- [x] function: `win::ask_user` to asks user a question with [y/n] pattern without the need of pressing enter key
 
 <h3><code>win::execute</code></h3>
 Function to execute a windows process and retrieve the output of the console in a `std::string`.  
@@ -580,5 +582,76 @@ int main(int argc, char** argv)
     }
   }
   return 0;
+}
+```
+
+<h3><code>win::ask_user</code></h3>
+Function to prompt the user a question with [y/n] pattern without the need of pressing enter key.  
+
+Arguments:
+
+- `str`: question that needs to be asked
+
+```cpp
+// prompt user with a question
+bool ask_user(const std::string& str)
+```
+
+<h3>Usage</h3>
+
+```cpp
+#include <iostream>
+#include <winpp/console.hpp>
+#include <winpp/win.hpp>
+
+int main(int argc, char** argv)
+{
+  // initialize Windows console
+  console::init();
+
+  // prompt user with a question
+  if (!win::ask_user("Do you want to continue"))
+    std::cout << "user doesn't want to continue" << std::endl;
+  return 0;
+}
+```
+
+### system-mutex
+
+Provides a system-wide, recursive, named lock (**RAII**).  
+This class satisfies requirements of C++11 concept "Lockable",  i.e. can be (and should be) used with unique_lock etc.
+
+```cpp
+// acquire system wide mutex to avoid multiples executions in //
+win::system_mutex mtx("Global\\XXX");
+std::lock_guard<win::system_mutex> lock(mtx);
+```
+
+<h3><code>win::system_mutex</code></h3>
+
+```cpp
+#include <iostream>
+#include <winpp/console.hpp>
+#include <winpp/system-mutex.hpp>
+
+int main(int argc, char** argv)
+{
+  // initialize Windows console
+  console::init();
+
+  try
+  {
+    // acquire system wide mutex to avoid multiples executions in //
+    win::system_mutex mtx("Global\\XXX");
+    std::lock_guard<win::system_mutex> lock(mtx);
+
+    // long process that will be protected
+    return 0;
+  }
+  catch (const std::exception& ex)
+  {
+    std::cout << "error: " << ex.what() << std::endl;
+    return -1;
+  }
 }
 ```
