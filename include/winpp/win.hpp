@@ -214,6 +214,7 @@ namespace win
     const std::string read_from_pipe(HANDLE hdl) const noexcept
     {
       DWORD len = 0;
+      char buf[1024]{ 0 };
       std::string logs;
       while (true)
       {
@@ -222,7 +223,7 @@ namespace win
           break;
 
         // read output from the child process's pipe for STDOUT - blocking
-        char buf[1024]{ 0 };
+        buf[0] = 0;
         if (ReadFile(hdl, buf, sizeof(buf) - 1, &len, nullptr) && len)
         {
           buf[len] = 0;
@@ -322,7 +323,7 @@ namespace win
       catch (const std::exception& ex)
       {
         cb_logs(fmt::format("{} {}",
-          fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error: "),
+          fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error:"),
           ex.what()));
         cb_exit(m_default_error_code);
         return false;
@@ -340,7 +341,7 @@ namespace win
       catch (const std::exception& ex)
       {
         m_cb_logs(fmt::format("{} {}",
-          fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error: "),
+          fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error:"),
           ex.what()));
         m_cb_exit(m_default_error_code);
       }
@@ -380,7 +381,7 @@ namespace win
       catch (const std::exception& ex)
       {
         m_logs = fmt::format("{} {}",
-          fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error: "),
+          fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error:"),
           ex.what());
         return m_default_error_code;
       }
