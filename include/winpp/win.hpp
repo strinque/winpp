@@ -213,21 +213,21 @@ namespace win
     // read data from pipe
     const std::string read_from_pipe(HANDLE hdl) const noexcept
     {
-      DWORD len = 0;
-      char buf[1024]{ 0 };
+      // check if there are still data to retrieve from stdout
+      DWORD avail = 0;
       std::string logs;
-      while (true)
+      if (PeekNamedPipe(hdl, 0, 0, 0, &avail, 0) && avail)
       {
-        // check if there are still data to retrieve from stdout
-        if (!PeekNamedPipe(hdl, 0, 0, 0, &len, 0) || !len)
-          break;
-
         // read output from the child process's pipe for STDOUT - blocking
-        buf[0] = 0;
-        if (ReadFile(hdl, buf, sizeof(buf) - 1, &len, nullptr) && len)
+        char buf[1024];
+        DWORD len = 0;
+        while (avail)
         {
+          if (!ReadFile(hdl, buf, sizeof(buf) - 1, &len, nullptr) || !len)
+            break;
           buf[len] = 0;
           logs += buf;
+          avail -= len;
         }
       }
       return logs;
@@ -322,7 +322,7 @@ namespace win
       }
       catch (const std::exception& ex)
       {
-        cb_logs(fmt::format("{} {}",
+        cb_logs(fmt::format("{} {}\n",
           fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error:"),
           ex.what()));
         cb_exit(m_default_error_code);
@@ -340,7 +340,7 @@ namespace win
       }
       catch (const std::exception& ex)
       {
-        m_cb_logs(fmt::format("{} {}",
+        m_cb_logs(fmt::format("{} {}\n",
           fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error:"),
           ex.what()));
         m_cb_exit(m_default_error_code);
@@ -380,7 +380,7 @@ namespace win
       }
       catch (const std::exception& ex)
       {
-        m_logs = fmt::format("{} {}",
+        m_logs = fmt::format("{} {}\n",
           fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error:"),
           ex.what());
         return m_default_error_code;
