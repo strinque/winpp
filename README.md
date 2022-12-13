@@ -8,7 +8,7 @@ Multiples components have been developped:
 - [x] `console.hpp`: initialize windows-console (ascii escape sequence, resize, handle utf8)
 - [x] `utf8.hpp`: handle utf8 convertion using windows api (faster than STL)
 - [x] `parser.hpp`: parse the command-line arguments
-- [x] `progress-bar.hpp`: improved progress-bar based on indicators::ProgressBar
+- [x] `progress-bar.hpp`: console progress-bar which works with NamedPipes
 - [x] `files.hpp`: set of functions to handle files
 - [x] `win.hpp`: set of generic windows functions (ex: execute a process)
 - [x] `system-mutex.hpp`: system wide named lock mutex
@@ -240,7 +240,7 @@ float: 54.9
 
 ### progress-bar
 
-The header-only `winpp::progress_bar` class is an enhanced *progress-bar* based on `indicators::ProgressBar`.  
+The header-only `winpp::progress_bar` class is an enhanced *progress-bar*.  
 It only updates every **100ms** instead of trying to display every elements and is designed with RAII.
 
 Features:
@@ -250,7 +250,7 @@ Features:
 - [x] automatically set the suffix with format: "xx% [xx/yy]"
 - [x] doesn't update more than once every 100ms
 - [x] uses RAII => initializes in constructor, clears properly in destructor
-- [x] based on indicators::ProgressBar
+- [x] works with NamedPipes (doesn't use console/terminal based function)
 
 <h3>Usage</h3>
 
@@ -266,7 +266,7 @@ int main(int argc, char** argv)
   console::init();
   
   std::vector<int> vec(500, 1);
-  console::progress_bar progress_bar("testing: ", vec.size());
+  console::progress_bar progress_bar("testing:", vec.size());
   for (const auto& v : vec)
   {
     progress_bar.tick();
