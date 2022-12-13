@@ -214,7 +214,6 @@ namespace win
     const std::string read_from_pipe(HANDLE hdl) const noexcept
     {
       DWORD len = 0;
-      char buf[1024];
       std::string logs;
       while (true)
       {
@@ -223,6 +222,7 @@ namespace win
           break;
 
         // read output from the child process's pipe for STDOUT - blocking
+        char buf[1024]{ 0 };
         if (ReadFile(hdl, buf, sizeof(buf) - 1, &len, nullptr) && len)
         {
           buf[len] = 0;
