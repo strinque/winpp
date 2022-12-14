@@ -53,6 +53,10 @@ namespace console
     // handle a tick on the progress-bar (only updated every x ms)
     void tick()
     {
+      // avoid division by zero error when the progress-bar isn't properly initialized
+      if (!m_max_progress)
+        return;
+
       if (!m_completed)
       {
         // check for completion

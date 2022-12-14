@@ -276,7 +276,7 @@ namespace console
       catch (const std::exception& ex)
       {
         fmt::print("{} {}\n",
-          fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error: "),
+          fmt::format(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "error:"),
           ex.what());
         return false;
       }

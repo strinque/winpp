@@ -411,7 +411,7 @@ namespace win
   }
   
   // ask user for input wih [y/n] message
-  bool ask_user(const std::string& str)
+  inline bool ask_user(const std::string& str)
   {
     int c;
     fmt::print("{} [y/n]: ", str);
