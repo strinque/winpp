@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 #include <fmt/color.h>
 #include <stdbool.h>
+#include <winpp/utf8.hpp>
 
 namespace console
 {
@@ -17,10 +18,12 @@ namespace console
   {
   public:
     // constructor/destructor
-    OptionBase(const std::string& _short,
+    OptionBase(const bool _from_pipe,
+               const std::string& _short,
                const std::string& _full,
                const std::string& _desc,
                bool _mandatory) :
+      m_from_pipe(_from_pipe),
       m_short(_short),
       m_full(_full),
       m_desc(_desc),
@@ -42,6 +45,7 @@ namespace console
     virtual void set(const std::string& str="") = 0;
 
   protected:
+    bool m_from_pipe;     // program launched from a pipe instead or a terminal
     std::string m_short;  // short command-line option (ex: "h")
     std::string m_full;   // full command-line option (ex: "help")
     std::string m_desc;   // command-line option description
@@ -49,21 +53,28 @@ namespace console
     bool m_defined;       // has this option been set?
   };
 
+  // template used to determine if the type T is a std::vector
+  template<typename T> struct is_vector : public std::false_type {};
+  template<typename T, typename A>
+  struct is_vector<std::vector<T, A>> : public std::true_type {};
+
   // store option informations
   template<typename T>
   class Option final : public OptionBase
   {
   public:
     // constructor/destructor
-    Option(const std::string& _short,
+    Option(const bool _from_pipe,
+           const std::string& _short,
            const std::string& _full,
            const std::string& _desc,
            T& _value,
            bool _mandatory = false) :
-      OptionBase(_short,
-                _full,
-                _desc,
-                _mandatory),
+      OptionBase(_from_pipe,
+                 _short,
+                 _full,
+                 _desc,
+                 _mandatory),
       m_value(_value) {}
     ~Option() = default;
 
@@ -91,51 +102,27 @@ namespace console
     }
 
   private:
-    // forbid non specialized template for the parser
-    template<typename T> void inner_set(const std::string& str);
-
     // define specialized template for the parser
-    template<> void inner_set<std::string>(const std::string& str) { m_value = decode<std::string>(str); }
-    template<> void inner_set<std::filesystem::path>(const std::string& str) { m_value = decode<std::filesystem::path>(str); }
-    template<> void inner_set<bool>(const std::string& str) { m_value = decode<bool>(str); }
-    template<> void inner_set<int>(const std::string& str) { m_value = decode<int>(str); }
-    template<> void inner_set<unsigned int>(const std::string& str) { m_value = decode<unsigned int>(str); }
-    template<> void inner_set<long>(const std::string& str) { m_value = decode<long>(str); }
-    template<> void inner_set<unsigned long>(const std::string& str) { m_value = decode<unsigned long>(str); }
-    template<> void inner_set<long long>(const std::string& str) { m_value = decode<long long>(str); }
-    template<> void inner_set<unsigned long long>(const std::string& str) { m_value = decode<unsigned long long>(str); }
-    template<> void inner_set<double>(const std::string& str) { m_value = decode<double>(str); }
-    template<> void inner_set<long double>(const std::string& str) { m_value = decode<long double>(str); }
-    template<> void inner_set<float>(const std::string& str) { m_value = decode<float>(str); }
+    template<typename T> void inner_set(const std::string& str) { store(is_vector<T>{}, str); }
+    void store(std::true_type, const std::string& str) { m_value = split<T::value_type>(str); }
+    void store(std::false_type, const std::string& str) { m_value = decode<T>(str); }
 
-    // define specialized vector template for the parser
-    template<> void inner_set<std::vector<std::string>>(const std::string& str) { m_value = split<std::string>(str); }
-    template<> void inner_set<std::vector<std::filesystem::path>>(const std::string& str) { m_value = split<std::filesystem::path>(str); }
-    template<> void inner_set<std::vector<bool>>(const std::string& str) { m_value = split<bool>(str); }
-    template<> void inner_set<std::vector<int>>(const std::string& str) { m_value = split<int>(str); }
-    template<> void inner_set<std::vector<unsigned int>>(const std::string& str) { m_value = split<unsigned int>(str); }
-    template<> void inner_set<std::vector<long>>(const std::string& str) { m_value = split<long>(str); }
-    template<> void inner_set<std::vector<unsigned long>>(const std::string& str) { m_value = split<unsigned long>(str); }
-    template<> void inner_set<std::vector<long long>>(const std::string& str) { m_value = split<long long>(str); }
-    template<> void inner_set<std::vector<unsigned long long>>(const std::string& str) { m_value = split<unsigned long long>(str); }
-    template<> void inner_set<std::vector<double>>(const std::string& str) { m_value = split<double>(str); }
-    template<> void inner_set<std::vector<long double>>(const std::string& str) { m_value = split<long double>(str); }
-    template<> void inner_set<std::vector<float>>(const std::string& str) { m_value = split<float>(str); }
+    // forbids non specialized template
+    template<typename T> T decode(const std::string& str);
 
     // decode string as custom types
-    template<typename T> T decode(const std::string& str);
-    template<> std::string decode<std::string>(const std::string& str) { return str; }
-    template<> std::filesystem::path decode<std::filesystem::path>(const std::string& str) { return std::filesystem::absolute(std::filesystem::path(str)); }
-    template<> bool decode<bool>(const std::string& str) { return true; }
-    template<> int decode<int>(const std::string& str) { return std::stoi(str); }
-    template<> unsigned int decode<unsigned int>(const std::string& str) { return std::stoui(str); }
-    template<> long decode<long>(const std::string& str) { return std::stol(str); }
-    template<> unsigned long decode<unsigned long>(const std::string& str) { return std::stoul(str); }
-    template<> long long decode<long long>(const std::string& str) { return std::stoll(str); }
-    template<> unsigned long long decode<unsigned long long>(const std::string& str) { return std::stoull(str); }
-    template<> double decode<double>(const std::string& str) { return std::stod(str); }
-    template<> long double decode<long double>(const std::string& str) { return std::stold(str); }
-    template<> float decode<float>(const std::string& str) { return std::stof(str); }
+    template<> std::string           decode<std::string>          (const std::string& str) { return m_from_pipe ? str : utf8::to_utf8(str); }
+    template<> std::filesystem::path decode<std::filesystem::path>(const std::string& str) { return std::filesystem::absolute(std::filesystem::path(m_from_pipe ? utf8::from_utf8(str) : str)); }
+    template<> bool                  decode<bool>                 (const std::string& str) { return true; }
+    template<> int                   decode<int>                  (const std::string& str) { return std::stoi(str); }
+    template<> unsigned int          decode<unsigned int>         (const std::string& str) { return std::stoui(str); }
+    template<> long                  decode<long>                 (const std::string& str) { return std::stol(str); }
+    template<> unsigned long         decode<unsigned long>        (const std::string& str) { return std::stoul(str); }
+    template<> long long             decode<long long>            (const std::string& str) { return std::stoll(str); }
+    template<> unsigned long long    decode<unsigned long long>   (const std::string& str) { return std::stoull(str); }
+    template<> double                decode<double>               (const std::string& str) { return std::stod(str); }
+    template<> long double           decode<long double>          (const std::string& str) { return std::stold(str); }
+    template<> float                 decode<float>                (const std::string& str) { return std::stof(str); }
 
     // split string into a vector of T
     template<typename T>
@@ -167,6 +154,7 @@ namespace console
       m_program_version(program_version),
       m_option_help(false),
       m_option_version(false),
+      m_from_pipe(GetFileType(GetStdHandle(STD_INPUT_HANDLE)) == FILE_TYPE_PIPE),
       m_options(),
       m_errors()
     {
@@ -199,7 +187,8 @@ namespace console
         else if (find(Key::Full, _full) != m_options.end())
           m_errors.push_back(fmt::format("argument [\"--{}\"] is already defined", _full));
         else
-          m_options.push_back(std::make_shared<Option<T>>(_short,
+          m_options.push_back(std::make_shared<Option<T>>(m_from_pipe,
+                                                          _short,
                                                           _full,
                                                           _desc,
                                                           _value,
@@ -363,6 +352,9 @@ namespace console
     // default arguments
     bool m_option_help;
     bool m_option_version;
+
+    // detect if the program is executed from pipe or in terminal
+    bool m_from_pipe;
 
     // store list of options - sorted by order of insertion
     std::vector<std::shared_ptr<OptionBase>> m_options;
