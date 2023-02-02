@@ -86,10 +86,6 @@ namespace console
     // overriden function to parse and store the argument value
     void set(const std::string& str = "") override
     {
-      // check argument validity
-      if (inner_has_arg<T>() && str.empty())
-        throw std::exception(fmt::format("missing argument for [\"-{}\", \"--{}\"]", m_short, m_full).c_str());
-
       try
       {
         inner_set<T>(str);
@@ -112,17 +108,17 @@ namespace console
 
     // decode string as custom types
     template<> std::string           decode<std::string>          (const std::string& str) { return m_from_pipe ? str : utf8::to_utf8(str); }
-    template<> std::filesystem::path decode<std::filesystem::path>(const std::string& str) { return std::filesystem::absolute(std::filesystem::path(m_from_pipe ? utf8::from_utf8(str) : str)); }
+    template<> std::filesystem::path decode<std::filesystem::path>(const std::string& str) { return !str.empty() ? std::filesystem::absolute(std::filesystem::path(m_from_pipe ? utf8::from_utf8(str) : str)) : ""; }
     template<> bool                  decode<bool>                 (const std::string& str) { return true; }
-    template<> int                   decode<int>                  (const std::string& str) { return std::stoi(str); }
-    template<> unsigned int          decode<unsigned int>         (const std::string& str) { return std::stoui(str); }
-    template<> long                  decode<long>                 (const std::string& str) { return std::stol(str); }
-    template<> unsigned long         decode<unsigned long>        (const std::string& str) { return std::stoul(str); }
-    template<> long long             decode<long long>            (const std::string& str) { return std::stoll(str); }
-    template<> unsigned long long    decode<unsigned long long>   (const std::string& str) { return std::stoull(str); }
-    template<> double                decode<double>               (const std::string& str) { return std::stod(str); }
-    template<> long double           decode<long double>          (const std::string& str) { return std::stold(str); }
-    template<> float                 decode<float>                (const std::string& str) { return std::stof(str); }
+    template<> int                   decode<int>                  (const std::string& str) { return !str.empty() ? std::stoi(str) : 0; }
+    template<> unsigned int          decode<unsigned int>         (const std::string& str) { return !str.empty() ? std::stoui(str) : 0; }
+    template<> long                  decode<long>                 (const std::string& str) { return !str.empty() ? std::stol(str) : 0; }
+    template<> unsigned long         decode<unsigned long>        (const std::string& str) { return !str.empty() ? std::stoul(str) : 0; }
+    template<> long long             decode<long long>            (const std::string& str) { return !str.empty() ? std::stoll(str) : 0; }
+    template<> unsigned long long    decode<unsigned long long>   (const std::string& str) { return !str.empty() ? std::stoull(str) : 0; }
+    template<> double                decode<double>               (const std::string& str) { return !str.empty() ? std::stod(str) : 0; }
+    template<> long double           decode<long double>          (const std::string& str) { return !str.empty() ? std::stold(str) : 0; }
+    template<> float                 decode<float>                (const std::string& str) { return !str.empty() ? std::stof(str) : 0; }
 
     // split string into a vector of T
     template<typename T>
