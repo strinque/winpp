@@ -474,6 +474,8 @@ A set of classes and functions to handle windows specific api:
 - [x] function: `win::execute` to execute a windows process in blocking mode and retrieve logs
 - [x] class: `win::sync_process` to execute a windows process in blocking mode and retrieve logs
 - [x] class: `win::async_process` to execute a windows process in non-blocking mode and retrieve logs
+- [x] function: `win::expand_path` to expand a windows path to a std::string
+- [x] function: `win::get_vcvars` to retrieve the latest vcvars available
 
 <h3><code>win::execute</code></h3>
 Function to execute a windows process and retrieve the output of the console in a `std::string`.  
@@ -610,6 +612,59 @@ int main(int argc, char** argv)
       std::cout << "exit code: " << std::to_string(exit_code) << std::endl;
     }
   }
+  return 0;
+}
+```
+
+<h3><code>win::expand_path</code></h3>
+Expand a windows path to a std::string.
+Arguments:
+
+- `path`: windows path that needs to be expanded
+
+```cpp
+// expand environment path
+const std::filesystem::path expand_path(const std::string& path)
+```
+
+<h3>Usage</h3>
+
+```cpp
+#include <iostream>
+#include <winpp/win.hpp>
+
+int main(int argc, char** argv)
+{
+  // initialize Windows console
+  console::init();
+
+  // expand variable
+  std::cout << "expand variable \"%ProgramFiles%\": " << win::expand_path("%ProgramFiles%").string() << std::endl;
+  return 0;
+}
+```
+
+<h3><code>win::get_vcvars</code></h3>
+Function to retrieve the latest vcvars available using `vswhere.exe`.
+
+```cpp
+// retrieve the latest vcvars available
+const std::filesystem::path get_vcvars()
+```
+
+<h3>Usage</h3>
+
+```cpp
+#include <iostream>
+#include <winpp/win.hpp>
+
+int main(int argc, char** argv)
+{
+  // initialize Windows console
+  console::init();
+
+  // get the path from the latest vcvars file
+  std::cout << "latest vcvars64.bat: " << win::get_vcvars().string() << std::endl;
   return 0;
 }
 ```

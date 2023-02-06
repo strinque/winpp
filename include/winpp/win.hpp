@@ -408,4 +408,33 @@ namespace win
     logs = proc.get_logs();
     return res;
   }
+
+  // expand environment path
+  inline const std::filesystem::path expand_path(const std::string& path)
+  {
+    char buf[MAX_PATH] = {};
+    if (!ExpandEnvironmentStringsA(path.c_str(), buf, MAX_PATH))
+      throw std::runtime_error(fmt::format("can't expand environment: \"{}\"", path));
+    if (!std::filesystem::exists(buf))
+      throw std::runtime_error(fmt::format("invalid file or directory: \"{}\"", buf));
+    return std::filesystem::path(buf);
+  }
+
+  // retrieve the latest vcvars available
+  inline const std::filesystem::path get_vcvars()
+  {
+    auto to_vcvars = [](const std::string& str) -> const std::filesystem::path {
+      return std::filesystem::path(str.substr(0, str.find("\r\n"))) / "VC" / "Auxiliary" / "Build" / "vcvars64.bat";
+    };
+
+    // execute the vswhere program
+    std::string logs;
+    const std::filesystem::path vswhere(std::filesystem::absolute(
+      expand_path("%ProgramFiles(x86)%") / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"));
+    if (!std::filesystem::exists(vswhere) ||
+        win::execute(fmt::format("\"{}\" -latest -property installationPath", vswhere.string()), logs) != 0 ||
+        !std::filesystem::exists(to_vcvars(logs)))
+      throw std::runtime_error("can't determine the latest vcvars64.bat in visual studio directories");
+    return to_vcvars(logs);
+  }
 }
