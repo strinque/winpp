@@ -1,8 +1,11 @@
 #pragma once
-#include <stdbool.h>
-#include <windows.h>
 #include <string>
 #include <memory>
+#include <cctype>
+#include <stdbool.h>
+#include <windows.h>
+#include <conio.h>
+#include <fmt/format.h>
 
 namespace console
 {
@@ -31,6 +34,27 @@ namespace console
     }
   }
   
+  // ask user for input wih [y/n] message
+  inline bool ask_user(const std::string& str)
+  {
+    int c;
+    fmt::print("{} [y/n]: ", str);
+    while (true)
+    {
+      c = getch();
+      if (std::tolower(c) == 'n')
+      {
+        fmt::print("n\n");
+        return false;
+      }
+      else if (std::tolower(c) == 'y')
+      {
+        fmt::print("y\n");
+        return true;
+      }
+    }
+  }
+
   // read user input as utf8
   inline const std::string input(bool password = false)
   {

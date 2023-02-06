@@ -135,6 +135,36 @@ Arguments:
 void console::init(int width=-1, int height=-1)
 ```
 
+<h3><code>console::ask_user</code></h3>
+Function to prompt the user a question with [y/n] pattern without the need of pressing enter key.  
+
+Arguments:
+
+- `str`: question that needs to be asked
+
+```cpp
+// prompt user with a question
+bool ask_user(const std::string& str)
+```
+
+<h3>Usage</h3>
+
+```cpp
+#include <iostream>
+#include <winpp/console.hpp>
+
+int main(int argc, char** argv)
+{
+  // initialize Windows console
+  console::init();
+
+  // prompt user with a question
+  if (!console::ask_user("Do you want to continue"))
+    std::cout << "user doesn't want to continue" << std::endl;
+  return 0;
+}
+```
+
 <h3><code>console::input</code></h3>
 
 Read user input as utf8.  
@@ -444,7 +474,6 @@ A set of classes and functions to handle windows specific api:
 - [x] function: `win::execute` to execute a windows process in blocking mode and retrieve logs
 - [x] class: `win::sync_process` to execute a windows process in blocking mode and retrieve logs
 - [x] class: `win::async_process` to execute a windows process in non-blocking mode and retrieve logs
-- [x] function: `win::ask_user` to asks user a question with [y/n] pattern without the need of pressing enter key
 
 <h3><code>win::execute</code></h3>
 Function to execute a windows process and retrieve the output of the console in a `std::string`.  
@@ -581,37 +610,6 @@ int main(int argc, char** argv)
       std::cout << "exit code: " << std::to_string(exit_code) << std::endl;
     }
   }
-  return 0;
-}
-```
-
-<h3><code>win::ask_user</code></h3>
-Function to prompt the user a question with [y/n] pattern without the need of pressing enter key.  
-
-Arguments:
-
-- `str`: question that needs to be asked
-
-```cpp
-// prompt user with a question
-bool ask_user(const std::string& str)
-```
-
-<h3>Usage</h3>
-
-```cpp
-#include <iostream>
-#include <winpp/console.hpp>
-#include <winpp/win.hpp>
-
-int main(int argc, char** argv)
-{
-  // initialize Windows console
-  console::init();
-
-  // prompt user with a question
-  if (!win::ask_user("Do you want to continue"))
-    std::cout << "user doesn't want to continue" << std::endl;
   return 0;
 }
 ```
