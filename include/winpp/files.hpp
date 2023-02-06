@@ -131,6 +131,21 @@ namespace files
     return get_files(path, depth, include_dirs, dir_filter, file_filter);
   }
 
+  // read file in one std::string
+  inline const std::string read(const std::filesystem::path& path)
+  {
+    std::ifstream file(path);
+    if (!file)
+      throw std::runtime_error(fmt::format("can't open file: \"{}\"", path.filename().u8string()));
+    file.seekg(0, std::ios::end);
+    std::string str;
+    str.reserve(file.tellg());
+    file.seekg(0, std::ios::beg);
+    str.assign((std::istreambuf_iterator<char>(file)),
+                std::istreambuf_iterator<char>());
+    return str;
+  }
+
   // get the sha-256 hash of a file (using hashpp header-only library)
   inline const std::string get_hash(const std::filesystem::path& file, 
                                     const hashpp::ALGORITHMS& algorithm = hashpp::ALGORITHMS::SHA2_256)

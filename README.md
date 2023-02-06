@@ -391,6 +391,33 @@ const std::vector<std::filesystem::path> get_files(const std::filesystem::path& 
                                                    const std::vector<std::filesystem::path>& skip_files = {})
 ```
 
+<h3><code>files::read</code></h3>
+Read the file into one std::string.
+
+Arguments:
+
+- `path`: file to read
+
+```cpp
+// read file in one std::string
+const std::string read(const std::filesystem::path& path)
+```
+
+<h3>Usage</h3>
+
+```cpp
+#include <iostream>
+#include <winpp/files.hpp>
+
+const std::string file = "C:\\Windows\\Boot\\BootDebuggerFiles.ini";
+
+int main(int argc, char** argv)
+{
+  std::cout << files::read(file) << std::endl;
+  return 0;
+}
+```
+
 <h3><code>files::get_hash</code></h3>
 Get the sha-256 hash of a file using hashpp header-only library.  
 Arguments:
