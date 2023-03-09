@@ -34,6 +34,8 @@ namespace files
       throw std::runtime_error(fmt::format("invalid directory: \"{}\"", path.string()));
 
     std::vector<std::filesystem::path> dirs;
+    if (check_dir(path, 0))
+      dirs.push_back(path);
     auto entry = std::filesystem::recursive_directory_iterator(path);
     while (entry != std::filesystem::recursive_directory_iterator())
     {
