@@ -4,6 +4,7 @@
 #include <regex>
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include <iomanip>
 #include <functional>
 #include <sys/stat.h>
@@ -26,12 +27,12 @@ namespace files
     const auto& check_depth = [](const int max_depth, const int current_depth) -> bool {
       return (max_depth == infinite_depth) ? true : (current_depth <= max_depth);
     };
-    const auto& check_dir = [dir_filter, check_depth, depth](const std::filesystem::path& p, const int d) -> bool {     
+    const auto& check_dir = [=](const std::filesystem::path& p, const int d) -> bool {     
       return std::filesystem::is_directory(p) && check_depth(depth, d) && dir_filter(p);
     };
 
     if (!std::filesystem::is_directory(path))
-      throw std::runtime_error(fmt::format("invalid directory: \"{}\"", path.string()));
+      throw std::runtime_error(fmt::format("invalid directory: \"{}\"", path.u8string()));
 
     std::vector<std::filesystem::path> dirs;
     if (check_dir(path, 0))
@@ -46,18 +47,26 @@ namespace files
     return dirs;
   }
 
+  // convert a path to a lowercase std::string
+  inline const std::string to_str(const std::filesystem::path& path)
+  {
+    std::string str = path.string();
+    std::transform(str.cbegin(), str.cend(), str.begin(), [](const char& c) { return std::tolower(c); });
+    return str;
+  }
+
   // get all directories and sub-directories with filtering (using a std::regex, fullpath for skip_dirs)
   inline const std::vector<std::filesystem::path> get_dirs(const std::filesystem::path& path,
                                                            const int depth = infinite_depth,
                                                            const std::regex& dir_regex = all_dirs,
                                                            const std::vector<std::filesystem::path>& skip_dirs = {})
   {
-    const auto& filter = [dir_regex, skip_dirs](const std::filesystem::path& p) -> bool {
-      const auto& compare_path = [p](const std::filesystem::path& p2) -> bool {
-        return p.string().find(p2.string()) != std::string::npos;
+    const auto& filter = [=](const std::filesystem::path& p1) -> bool {
+      const auto& compare_path = [p1](const std::filesystem::path& p2) -> bool {
+        return to_str(p1).find(to_str(p2)) != std::string::npos;
       };
-      return std::regex_search(p.string(), dir_regex) &&
-             std::find_if(skip_dirs.begin(), skip_dirs.end(), compare_path) == skip_dirs.end();
+      return std::regex_search(p1.string(), dir_regex) &&
+             std::find_if(skip_dirs.cbegin(), skip_dirs.cend(), compare_path) == skip_dirs.cend();
     };
     return get_dirs(path, depth, filter);
   }
@@ -72,18 +81,18 @@ namespace files
     const auto& check_depth = [](const int max_depth, const int current_depth) -> bool {
       return (max_depth == infinite_depth) ? true : (current_depth <= max_depth);
     };
-    const auto& check_dir = [&](const std::filesystem::path& p, const int d) -> bool {
+    const auto& check_dir = [=](const std::filesystem::path& p, const int d) -> bool {
       return include_dirs ? check_depth(depth, d) && dir_filter(p) : false;
     };
-    const auto& check_file = [&](const std::filesystem::path& p, const int d) -> bool {
+    const auto& check_file = [=](const std::filesystem::path& p, const int d) -> bool {
       return check_depth(depth, d) && dir_filter(p) && file_filter(p);
     };
-    const auto& check = [&](const std::filesystem::path& p, const int d) -> bool {
+    const auto& check = [=](const std::filesystem::path& p, const int d) -> bool {
       return std::filesystem::is_directory(p) ? check_dir(p, d) : check_file(p, d);
     };
 
     if (!std::filesystem::is_directory(path))
-      throw std::runtime_error(fmt::format("invalid directory: \"{}\"", path.string()));
+      throw std::runtime_error(fmt::format("invalid directory: \"{}\"", path.u8string()));
 
     std::vector<std::filesystem::path> files;
     if (depth == 0)
@@ -116,19 +125,19 @@ namespace files
                                                             const std::vector<std::filesystem::path>& skip_dirs = {},
                                                             const std::vector<std::filesystem::path>& skip_files = {})
   {
-    const auto& dir_filter = [&](const std::filesystem::path& p) -> bool {
-      const auto& compare_path = [p](const std::filesystem::path& p2) -> bool {
-        return p.string().find(p2.string()) != std::string::npos;
+    const auto& dir_filter = [=](const std::filesystem::path& p1) -> bool {
+      const auto& compare_path = [p1](const std::filesystem::path& p2) -> bool {
+        return to_str(p1).find(to_str(p2)) != std::string::npos;
       };
-      return std::regex_search(p.string(), dir_regex) &&
-             std::find_if(skip_dirs.begin(), skip_dirs.end(), compare_path) == skip_dirs.end();
+      return std::regex_search(p1.string(), dir_regex) &&
+             std::find_if(skip_dirs.cbegin(), skip_dirs.cend(), compare_path) == skip_dirs.cend();
     };
-    const auto& file_filter = [&](const std::filesystem::path& p) -> bool {
-      const auto& compare_path = [p](const std::filesystem::path& p2) -> bool {
-        return std::filesystem::equivalent(p, p2);
+    const auto& file_filter = [=](const std::filesystem::path& p1) -> bool {
+      const auto& compare_path = [p1](const std::filesystem::path& p2) -> bool {
+        return std::filesystem::equivalent(p1, p2);
       };
-      return std::regex_search(p.filename().string(), file_regex) &&
-             std::find_if(skip_files.begin(), skip_files.end(), compare_path) == skip_files.end();
+      return std::regex_search(p1.filename().string(), file_regex) &&
+             std::find_if(skip_files.cbegin(), skip_files.cend(), compare_path) == skip_files.cend();
     };
     return get_files(path, depth, include_dirs, dir_filter, file_filter);
   }
@@ -153,9 +162,9 @@ namespace files
                                     const hashpp::ALGORITHMS& algorithm = hashpp::ALGORITHMS::SHA2_256)
   {
     // try to open file in binary mode
-    std::ifstream f(file.string(), std::ios::binary);
+    std::ifstream f(file, std::ios::binary);
     if (!f.good())
-      throw std::runtime_error(fmt::format("can't open file: \"{}\"", file.filename().string()));
+      throw std::runtime_error(fmt::format("can't open file: \"{}\"", file.filename().u8string()));
     return hashpp::get::getFileHash(algorithm, file.string()).getString();
   }
 
@@ -164,7 +173,7 @@ namespace files
   {
     struct stat file_info;
     if (stat(file.string().c_str(), &file_info) != 0)
-      throw std::runtime_error(fmt::format("can't read file information for \"{}\" (err: \"{}\"", file.string(), strerror(errno)));
+      throw std::runtime_error(fmt::format("can't read file information for \"{}\" (err: \"{}\"", file.u8string(), strerror(errno)));
     return file_info;
   }
 
