@@ -104,25 +104,25 @@ namespace console
     void store(std::false_type, const std::string& str) { m_value = decode<T>(str); }
 
     // forbids non specialized template
-    template<typename T> T decode(const std::string& str);
+    template<typename T> T decode(const std::string& str) const;
 
     // decode string as custom types
-    template<> std::string           decode<std::string>          (const std::string& str) { return m_from_pipe ? str : utf8::to_utf8(str); }
-    template<> std::filesystem::path decode<std::filesystem::path>(const std::string& str) { return !str.empty() ? std::filesystem::absolute(std::filesystem::path(m_from_pipe ? utf8::from_utf8(str) : str)) : ""; }
-    template<> bool                  decode<bool>                 (const std::string& str) { return true; }
-    template<> int                   decode<int>                  (const std::string& str) { return !str.empty() ? std::stoi(str) : 0; }
-    template<> unsigned int          decode<unsigned int>         (const std::string& str) { return !str.empty() ? std::stoui(str) : 0; }
-    template<> long                  decode<long>                 (const std::string& str) { return !str.empty() ? std::stol(str) : 0; }
-    template<> unsigned long         decode<unsigned long>        (const std::string& str) { return !str.empty() ? std::stoul(str) : 0; }
-    template<> long long             decode<long long>            (const std::string& str) { return !str.empty() ? std::stoll(str) : 0; }
-    template<> unsigned long long    decode<unsigned long long>   (const std::string& str) { return !str.empty() ? std::stoull(str) : 0; }
-    template<> double                decode<double>               (const std::string& str) { return !str.empty() ? std::stod(str) : 0; }
-    template<> long double           decode<long double>          (const std::string& str) { return !str.empty() ? std::stold(str) : 0; }
-    template<> float                 decode<float>                (const std::string& str) { return !str.empty() ? std::stof(str) : 0; }
+    template<> std::string           decode<std::string>          (const std::string& str) const { return m_from_pipe ? str : utf8::to_utf8(str); }
+    template<> std::filesystem::path decode<std::filesystem::path>(const std::string& str) const { return to_path(m_from_pipe ? utf8::from_utf8(str) : str); }
+    template<> bool                  decode<bool>                 (const std::string& str) const { return true; }
+    template<> int                   decode<int>                  (const std::string& str) const { return !str.empty() ? std::stoi(str) : 0; }
+    template<> unsigned int          decode<unsigned int>         (const std::string& str) const { return !str.empty() ? std::stoui(str) : 0; }
+    template<> long                  decode<long>                 (const std::string& str) const { return !str.empty() ? std::stol(str) : 0; }
+    template<> unsigned long         decode<unsigned long>        (const std::string& str) const { return !str.empty() ? std::stoul(str) : 0; }
+    template<> long long             decode<long long>            (const std::string& str) const { return !str.empty() ? std::stoll(str) : 0; }
+    template<> unsigned long long    decode<unsigned long long>   (const std::string& str) const { return !str.empty() ? std::stoull(str) : 0; }
+    template<> double                decode<double>               (const std::string& str) const { return !str.empty() ? std::stod(str) : 0; }
+    template<> long double           decode<long double>          (const std::string& str) const { return !str.empty() ? std::stold(str) : 0; }
+    template<> float                 decode<float>                (const std::string& str) const { return !str.empty() ? std::stof(str) : 0; }
 
     // split string into a vector of T
     template<typename T>
-    std::vector<T> split(const std::string& str)
+    std::vector<T> split(const std::string& str) const
     {
       std::vector<T> tokens;
       std::istringstream ss(str);
@@ -130,6 +130,19 @@ namespace console
       while (std::getline(ss, token, ';'))
         tokens.push_back(decode<T>(token));
       return tokens;
+    }
+
+    // convert string to path
+    const std::filesystem::path to_path(std::string str) const
+    {
+      if (!str.empty())
+      {
+        str.erase(std::remove(str.begin(), str.end(), '"'), str.end());
+        str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
+        if (str.back() == '\\')
+          str.pop_back();
+      }
+      return std::filesystem::absolute(str);
     }
 
   private:
