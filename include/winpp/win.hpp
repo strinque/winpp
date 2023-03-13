@@ -89,7 +89,7 @@ namespace win
 
       // check the validity of the working directory
       if (!std::filesystem::is_directory(m_working_dir))
-        throw std::runtime_error(fmt::format("working directory isn't valid: \"{}\"", m_working_dir.string()));
+        throw std::runtime_error(fmt::format("working directory isn't valid: \"{}\"", m_working_dir.u8string()));
 
       // create a pipe for the child process's STDOUT
       if (!CreatePipe(&m_stdout_rd, &m_stdout_wr, &m_sa, 0))
@@ -128,7 +128,7 @@ namespace win
       m_last_ts = std::chrono::steady_clock::now();
 
       // create the child process
-      std::string args = cmd;
+      std::string args = fmt::format("cmd.exe /c \"chcp.com 65001>NUL & {}\"", cmd);
       m_running = true;
       if (!CreateProcessA(nullptr,                             // no module name
                           args.data(),                         // command line 
