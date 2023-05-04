@@ -33,10 +33,10 @@ namespace console
 
     // getters
     std::string get_short() const { return m_short; }
-    std::string get_full() const { return m_full; }
-    std::string get_desc() const { return m_desc; }
-    bool get_mandatory() const { return m_mandatory; }
-    bool get_defined() const { return m_defined; }
+    std::string get_full() const  { return m_full; }
+    std::string get_desc() const  { return m_desc; }
+    bool get_mandatory() const    { return m_mandatory; }
+    bool get_defined() const      { return m_defined; }
 
     // virtual function to determine if this option has an argument
     virtual bool has_arg() const = 0;
@@ -111,7 +111,7 @@ namespace console
     template<> std::filesystem::path decode<std::filesystem::path>(const std::string& str) const { return to_path(m_from_pipe ? utf8::from_utf8(str) : str); }
     template<> bool                  decode<bool>                 (const std::string& str) const { return true; }
     template<> int                   decode<int>                  (const std::string& str) const { return !str.empty() ? std::stoi(str) : 0; }
-    template<> unsigned int          decode<unsigned int>         (const std::string& str) const { return !str.empty() ? std::stoui(str) : 0; }
+    template<> unsigned int          decode<unsigned int>         (const std::string& str) const { return !str.empty() ? static_cast<unsigned int>(std::stoul(str)) : 0; }
     template<> long                  decode<long>                 (const std::string& str) const { return !str.empty() ? std::stol(str) : 0; }
     template<> unsigned long         decode<unsigned long>        (const std::string& str) const { return !str.empty() ? std::stoul(str) : 0; }
     template<> long long             decode<long long>            (const std::string& str) const { return !str.empty() ? std::stoll(str) : 0; }
