@@ -145,15 +145,14 @@ namespace files
   // read file in one std::string
   inline const std::string read(const std::filesystem::path& path)
   {
-    std::ifstream file(path);
+    std::ifstream file(path, std::ios::binary);
     if (!file)
       throw std::runtime_error(fmt::format("can't open file: \"{}\"", path.filename().u8string()));
     file.seekg(0, std::ios::end);
-    std::string str;
-    str.reserve(file.tellg());
+    const std::size_t size = file.tellg();
     file.seekg(0, std::ios::beg);
-    str.assign((std::istreambuf_iterator<char>(file)),
-                std::istreambuf_iterator<char>());
+    std::string str(size, 0);
+    file.read(&str[0], size);
     return str;
   }
 
