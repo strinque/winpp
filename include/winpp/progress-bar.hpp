@@ -37,6 +37,7 @@ namespace console
       m_completed(false)
     {
       show_console_cursor(false);
+      update();
     }
 
     // destructor
@@ -65,22 +66,7 @@ namespace console
 
         // display progress-bar
         if (m_completed || std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_last_ts) >= m_refresh_interval)
-        {
-          const std::size_t fill_length = (m_bar_width - 2) * m_progress / m_max_progress;
-          const std::size_t empty_length = (m_bar_width - 2) - fill_length;
-          std::cout << "\r";
-          std::cout << m_prefix << " ";
-          std::cout << m_start;
-          for (int i = 0; i < fill_length; ++i)
-            std::cout << m_fill;
-          for (int i = 0; i < empty_length; ++i)
-            std::cout << m_empty;
-          std::cout << m_end << " ";
-          std::cout << std::setfill('0') << std::setw(2) << std::to_string(m_progress * 100 / m_max_progress) << "% ";
-          std::cout << "[" << std::to_string(m_progress) << "/" << std::to_string(m_max_progress) << "]";
-          std::cout << std::flush;
-          m_last_ts = std::chrono::steady_clock::now();
-        }
+          update();
 
         if (m_completed)
           std::cout << std::endl;
@@ -96,6 +82,25 @@ namespace console
       GetConsoleCursorInfo(hdl, &cursor_info);
       cursor_info.bVisible = show;
       SetConsoleCursorInfo(hdl, &cursor_info);
+    }
+
+    // display the progress-bar
+    void update()
+    {
+      const std::size_t fill_length = (m_bar_width - 2) * m_progress / m_max_progress;
+      const std::size_t empty_length = (m_bar_width - 2) - fill_length;
+      std::cout << "\r";
+      std::cout << m_prefix << " ";
+      std::cout << m_start;
+      for (int i = 0; i < fill_length; ++i)
+        std::cout << m_fill;
+      for (int i = 0; i < empty_length; ++i)
+        std::cout << m_empty;
+      std::cout << m_end << " ";
+      std::cout << std::setfill('0') << std::setw(2) << std::to_string(m_progress * 100 / m_max_progress) << "% ";
+      std::cout << "[" << std::to_string(m_progress) << "/" << std::to_string(m_max_progress) << "]";
+      std::cout << std::flush;
+      m_last_ts = std::chrono::steady_clock::now();
     }
 
   private:
