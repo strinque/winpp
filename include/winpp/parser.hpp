@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <set>
 #include <string>
 #include <sstream>
 #include <filesystem>
@@ -58,6 +59,11 @@ namespace console
   template<typename T, typename A>
   struct is_vector<std::vector<T, A>> : public std::true_type {};
 
+  // template used to determine if the type T is a std::set
+  template<typename T> struct is_set : public std::false_type {};
+  template<typename T, typename A>
+  struct is_set<std::set<T, A>> : public std::true_type {};
+
   // store option informations
   template<typename T>
   class Option final : public OptionBase
@@ -99,9 +105,10 @@ namespace console
 
   private:
     // define specialized template for the parser
-    template<typename T> void inner_set(const std::string& str) { store(is_vector<T>{}, str); }
-    void store(std::true_type, const std::string& str) { m_value = split<T::value_type>(str); }
-    void store(std::false_type, const std::string& str) { m_value = decode<T>(str); }
+    template<typename T> void inner_set(const std::string& str) { store(is_vector<T>{}, is_set<T>{}, str); }
+    void store(std::true_type, std::false_type, const std::string& str) { m_value = split_vector<T::value_type>(str); }
+    void store(std::false_type, std::true_type, const std::string& str) { m_value = split_set<T::value_type>(str); }
+    void store(std::false_type, std::false_type, const std::string& str) { m_value = decode<T>(str); }
 
     // forbids non specialized template
     template<typename T> T decode(const std::string& str) const;
@@ -122,16 +129,34 @@ namespace console
 
     // split string into a vector of T
     template<typename T>
-    std::vector<T> split(const std::string& str) const
+    std::vector<T> split_vector(const std::string& str) const
     {
       std::vector<T> tokens;
       std::istringstream ss(str);
       std::string token;
-      while (std::getline(ss, token, ';'))
+      char tokenizer = ';';
+      if (str.find(',') != std::string::npos)
+        tokenizer = ',';
+      while (std::getline(ss, token, tokenizer))
         tokens.push_back(decode<T>(token));
       return tokens;
     }
 
+    // split string into a set of T
+    template<typename T>
+    std::set<T> split_set(const std::string& str) const
+    {
+      std::set<T> tokens;
+      std::istringstream ss(str);
+      std::string token;
+      char tokenizer = ';';
+      if (str.find(',') != std::string::npos)
+        tokenizer = ',';
+      while (std::getline(ss, token, tokenizer))
+        tokens.insert(decode<T>(token));
+      return tokens;
+    }
+   
     // convert string to path
     const std::filesystem::path to_path(std::string str) const
     {
