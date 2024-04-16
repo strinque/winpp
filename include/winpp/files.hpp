@@ -191,17 +191,25 @@ namespace files
                             NULL);
     if (fp != INVALID_HANDLE_VALUE)
     {
-      auto to_ts = [](const uint64_t ts) { return (ts * 10000000) + 116444736000000000; };
-      const uint64_t c_ctime = to_ts(ctime);
-      const uint64_t c_atime = to_ts(atime);
-      const uint64_t c_mtime = to_ts(mtime);
-      FILETIME creation_time{ c_ctime & 0xFFFFFFFF, c_ctime >> 32 };
-      FILETIME access_time{ c_atime & 0xFFFFFFFF, c_atime >> 32 };
-      FILETIME modification_time{ c_mtime & 0xFFFFFFFF, c_mtime >> 32 };
-      SetFileTime(fp,
-                  ctime ? &creation_time : nullptr,
-                  atime ? &access_time : nullptr,
-                  mtime ? &modification_time : nullptr);
+      auto to_ft = [](const uint64_t ts) -> FILETIME {
+        ULARGE_INTEGER uli = { 0 };
+        uli.QuadPart = static_cast<ULONGLONG>(ts) * 10000000ULL + 116444736000000000ULL;
+        FILETIME ft;
+        ft.dwLowDateTime = uli.LowPart;
+        ft.dwHighDateTime = uli.HighPart;
+        return ft;
+      };
+      FILETIME creation_time = to_ft(ctime);
+      FILETIME access_time = to_ft(atime);
+      FILETIME modification_time = to_ft(mtime);
+      if (!SetFileTime(fp,
+                       ctime ? &creation_time : nullptr,
+                       atime ? &access_time : nullptr,
+                       mtime ? &modification_time : nullptr))
+      {
+        CloseHandle(fp);
+        throw std::runtime_error(fmt::format("can't write file information for \"{}\" (err: \"{}\"", file.u8string(), GetLastError()));
+      }
       CloseHandle(fp);
     }
   }
